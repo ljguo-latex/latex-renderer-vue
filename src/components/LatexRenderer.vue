@@ -28,6 +28,10 @@ const props = defineProps({
     type: Function,
     default: ({ src }) => src,
   },
+  theme: {
+    type: Object,
+    default: () => ({}),
+  },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -35,6 +39,9 @@ const emit = defineEmits(['update:modelValue'])
 const activeProcessors = computed(() => props.processors)
 const processorRegistry = computed(() => createProcessorRegistry(activeProcessors.value))
 const nodes = computed(() => parseLatex(props.modelValue, activeProcessors.value))
+const themeStyles = computed(() => ({
+  '--latex-renderer-theme-color': props.theme?.color || '#000000',
+}))
 
 provide(INLINE_COMMAND_HANDLERS_KEY, computed(() => props.inlineCommands))
 provide(IMAGE_SRC_RESOLVER_KEY, computed(() => props.imageSrcResolver))
@@ -54,7 +61,7 @@ function handleNodeUpdate(nextNode) {
 </script>
 
 <template>
-  <div class="latex-renderer">
+  <div class="latex-renderer" :style="themeStyles">
     <template v-for="node in nodes" :key="node.id">
       <component
         :is="processorRegistry.get(node.type)?.component"

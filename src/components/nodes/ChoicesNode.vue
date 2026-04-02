@@ -44,7 +44,7 @@ function createTextNode(content, index) {
 }
 
 .choices-node__label {
-  color: #233241;
+  color: var(--latex-renderer-theme-color);
   font-weight: 500;
 }
 

@@ -344,7 +344,7 @@ onBeforeUnmount(() => {
 
 .resizable-image--open .resizable-image__frame,
 .resizable-image--active .resizable-image__frame {
-  outline: 2px solid rgba(208, 111, 61, 0.65);
+  outline: 2px solid color-mix(in srgb, var(--latex-renderer-theme-color) 55%, transparent);
   outline-offset: 2px;
 }
 
@@ -409,9 +409,9 @@ onBeforeUnmount(() => {
 }
 
 .resizable-image__alignment-button--active {
-  border-color: rgba(198, 95, 52, 0.42);
-  background: rgba(208, 111, 61, 0.12);
-  color: #9f542d;
+  border-color: var(--latex-renderer-theme-color);
+  background: color-mix(in srgb, var(--latex-renderer-theme-color) 12%, white);
+  color: var(--latex-renderer-theme-color);
 }
 
 .resizable-image__slider-value {
@@ -424,7 +424,7 @@ onBeforeUnmount(() => {
 .resizable-image__slider-input {
   width: 100%;
   min-width: 0;
-  accent-color: #d06f3d;
+  accent-color: var(--latex-renderer-theme-color);
 }
 
 @media (max-width: 640px) {

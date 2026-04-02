@@ -76,6 +76,7 @@ Readonly rendering:
 - `processors?: Array`
 - `inlineCommands?: Record<string, { name: string, component: Component }>`
 - `imageSrcResolver?: ({ src, node }) => string | Promise<string>`
+- `theme?: { color?: string }`
 
 Emits:
 
@@ -103,6 +104,33 @@ function imageSrcResolver({ src }) {
   />
 </template>
 ```
+
+Theme example:
+
+```vue
+<script setup>
+import LatexRenderer from 'latex-renderer-vue'
+
+const theme = {
+  color: '#0f766e',
+}
+</script>
+
+<template>
+  <LatexRenderer
+    :model-value="latex"
+    :theme="theme"
+  />
+</template>
+```
+
+This single color is used by:
+
+- image toolbar active state
+- choices labels
+- enumerate labels
+- `\paren` brackets
+- `\blank` underline
 
 ### Named Exports
 
