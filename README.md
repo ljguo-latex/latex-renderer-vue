@@ -7,6 +7,7 @@ This repository now uses a real library build:
 - source entry: `src/index.js`
 - package entry: `dist/index.js`
 - CommonJS entry: `dist/index.cjs`
+- demo entry: `examples/main.js`
 - Git installs build the package through `prepare`
 
 ## What It Supports
@@ -180,4 +181,4 @@ pnpm build:demo
 
 - `pnpm build` builds the package library
 - `pnpm build:demo` builds the local demo page
-- the demo page lives in `src/views/HomeView.vue`
+- the demo page lives in `examples/App.vue`

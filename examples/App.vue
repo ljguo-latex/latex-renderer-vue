@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 
-import LatexRenderer from '../components/LatexRenderer.vue'
+import LatexRenderer from '../src/index.js'
 
 const readonlyLatex = String.raw`这是只读渲染示例：$a^2 + b^2 = c^2$，括号题：\paren，填空题：\blank。
 \begin{center}
@@ -69,41 +69,41 @@ const latex = ref(String.raw\`点击图片后可调整宽度
 </script>
 
 <template>
-  <main class="home-view">
-    <section class="usage-example">
-      <header class="usage-example__header">
-        <p class="usage-example__eyebrow">Usage</p>
-        <h1>LatexRenderer 单页调用示例</h1>
-        <p>项目现在只保留核心渲染链路和这个调用页。这里演示了只读渲染与可编辑图片两种接入方式。</p>
+  <main class="demo-view">
+    <section class="demo">
+      <header class="demo__header">
+        <p class="demo__eyebrow">Examples</p>
+        <h1>latex-renderer-vue Demo</h1>
+        <p>这个页面只用于本地开发验证。包源码本身都放在 <code>src/</code>。</p>
       </header>
 
-      <div class="usage-example__grid">
-        <article class="usage-card">
-          <div class="usage-card__header">
+      <div class="demo__grid">
+        <article class="demo-card">
+          <div class="demo-card__header">
             <h2>只读渲染</h2>
-            <p>适合普通预览页。图片和 <code>choices</code> 这类扩展块都会走处理器。</p>
+            <p>图片、enumerate、choices 和行内命令都会走处理器。</p>
           </div>
 
-          <pre class="usage-card__code">{{ readonlySnippet }}</pre>
+          <pre class="demo-card__code">{{ readonlySnippet }}</pre>
 
-          <div class="usage-card__preview">
+          <div class="demo-card__preview">
             <LatexRenderer :model-value="readonlyLatex" />
           </div>
         </article>
 
-        <article class="usage-card">
-          <div class="usage-card__header">
+        <article class="demo-card">
+          <div class="demo-card__header">
             <h2>图片可编辑</h2>
-            <p>通过 <code>v-model</code> 接收整段 LaTeX 回写，点击图片后可调整宽度和对齐。</p>
+            <p>通过 <code>v-model</code> 回写整段 LaTeX，点击图片后可调整宽度和对齐。</p>
           </div>
 
-          <pre class="usage-card__code">{{ editableSnippet }}</pre>
+          <pre class="demo-card__code">{{ editableSnippet }}</pre>
 
-          <div class="usage-card__preview">
+          <div class="demo-card__preview">
             <LatexRenderer v-model="editableLatex" :editable-images="true" />
           </div>
 
-          <pre class="usage-card__output">{{ editableLatex }}</pre>
+          <pre class="demo-card__output">{{ editableLatex }}</pre>
         </article>
       </div>
     </section>
@@ -111,17 +111,17 @@ const latex = ref(String.raw\`点击图片后可调整宽度
 </template>
 
 <style scoped>
-.home-view {
+.demo-view {
   width: min(1400px, 100%);
   margin: 0 auto;
 }
 
-.usage-example {
+.demo {
   display: grid;
   gap: 1.5rem;
 }
 
-.usage-example__header {
+.demo__header {
   display: grid;
   gap: 0.45rem;
   padding: 1.35rem 1.5rem;
@@ -130,30 +130,30 @@ const latex = ref(String.raw\`点击图片后可调整宽度
   background: rgba(255, 255, 255, 0.88);
 }
 
-.usage-example__eyebrow {
+.demo__eyebrow {
   color: #9f542d;
   font-size: 0.78rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
-.usage-example__header h1 {
+.demo__header h1 {
   color: #162330;
   font-size: clamp(2rem, 5vw, 3.4rem);
   line-height: 0.95;
   font-weight: 700;
 }
 
-.usage-example__header p {
+.demo__header p {
   color: #66717c;
 }
 
-.usage-example__grid {
+.demo__grid {
   display: grid;
   gap: 1.5rem;
 }
 
-.usage-card {
+.demo-card {
   display: grid;
   gap: 1rem;
   padding: 1.25rem;
@@ -163,24 +163,24 @@ const latex = ref(String.raw\`点击图片后可调整宽度
   box-shadow: 0 16px 40px rgba(18, 27, 34, 0.06);
 }
 
-.usage-card__header {
+.demo-card__header {
   display: grid;
   gap: 0.35rem;
 }
 
-.usage-card__header h2 {
+.demo-card__header h2 {
   color: #162330;
   font-size: 1.05rem;
   font-weight: 700;
 }
 
-.usage-card__header p {
+.demo-card__header p {
   color: #66717c;
   font-size: 0.92rem;
 }
 
-.usage-card__code,
-.usage-card__output {
+.demo-card__code,
+.demo-card__output {
   margin: 0;
   padding: 1rem;
   border-radius: 14px;
@@ -192,12 +192,12 @@ const latex = ref(String.raw\`点击图片后可调整宽度
   line-height: 1.7;
 }
 
-.usage-card__preview {
+.demo-card__preview {
   padding: 0.25rem 0;
 }
 
 @media (min-width: 980px) {
-  .usage-example__grid {
+  .demo__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
   }
