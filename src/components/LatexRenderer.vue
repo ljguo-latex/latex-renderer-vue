@@ -2,6 +2,7 @@
 import { computed, provide } from 'vue'
 
 import { parseLatex, replaceNode, serializeLatex } from '../latex/core'
+import { IMAGE_SRC_RESOLVER_KEY } from '../latex/imageContext'
 import { inlineCommandHandlers as defaultInlineCommandHandlers } from '../latex/inline/commands'
 import { INLINE_COMMAND_HANDLERS_KEY } from '../latex/inline/context'
 import { createProcessorRegistry, defaultProcessors } from '../latex/processors'
@@ -23,6 +24,10 @@ const props = defineProps({
     type: Object,
     default: () => defaultInlineCommandHandlers,
   },
+  imageSrcResolver: {
+    type: Function,
+    default: ({ src }) => src,
+  },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -32,6 +37,7 @@ const processorRegistry = computed(() => createProcessorRegistry(activeProcessor
 const nodes = computed(() => parseLatex(props.modelValue, activeProcessors.value))
 
 provide(INLINE_COMMAND_HANDLERS_KEY, computed(() => props.inlineCommands))
+provide(IMAGE_SRC_RESOLVER_KEY, computed(() => props.imageSrcResolver))
 
 function isNodeEditable(node) {
   const processor = processorRegistry.value.get(node.type)
@@ -61,8 +67,4 @@ function handleNodeUpdate(nextNode) {
 </template>
 
 <style scoped>
-.latex-renderer {
-  display: grid;
-  gap: 1rem;
-}
 </style>

@@ -75,10 +75,34 @@ Readonly rendering:
 - `editableImages?: boolean`
 - `processors?: Array`
 - `inlineCommands?: Record<string, { name: string, component: Component }>`
+- `imageSrcResolver?: ({ src, node }) => string | Promise<string>`
 
 Emits:
 
 - `update:modelValue`
+
+Image source resolution example:
+
+```vue
+<script setup>
+import LatexRenderer from 'latex-renderer-vue'
+
+function imageSrcResolver({ src }) {
+  if (src.startsWith('app/')) {
+    return `https://your-oss.example.com/${src}`
+  }
+
+  return src
+}
+</script>
+
+<template>
+  <LatexRenderer
+    :model-value="latex"
+    :image-src-resolver="imageSrcResolver"
+  />
+</template>
+```
 
 ### Named Exports
 
