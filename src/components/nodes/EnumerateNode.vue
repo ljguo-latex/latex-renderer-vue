@@ -47,7 +47,7 @@ function createTextNode(content, index) {
 .enumerate-node__label {
   color: var(--latex-renderer-theme-color);
   font-weight: 500;
-  line-height: 1.6;
+  line-height: 1.8;
 }
 
 .enumerate-node__content {
