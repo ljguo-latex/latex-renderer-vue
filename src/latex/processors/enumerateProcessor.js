@@ -1,6 +1,7 @@
 import EnumerateNode from '../../components/nodes/EnumerateNode.vue'
 
 const ENUMERATE_PATTERN = /\\begin\{enumerate\}(?:\[(.*?)\])?([\s\S]*?)\\end\{enumerate\}/g
+const ITEM_INDENT = '    '
 
 function parseItems(body = '') {
   return body
@@ -64,7 +65,9 @@ export const enumerateProcessor = {
   serialize(node) {
     const label = node.options?.label
     const optionBlock = label ? `[label = ${label}]` : ''
-    const items = (node.items || []).map((item) => `\\item ${item}`).join('\n')
+    const items = (node.items || [])
+      .map((item) => `${ITEM_INDENT}\\item ${String(item ?? '').replace(/\n/g, `\n${ITEM_INDENT}`)}`)
+      .join('\n')
 
     return `\\begin{enumerate}${optionBlock}\n${items}\n\\end{enumerate}`
   },

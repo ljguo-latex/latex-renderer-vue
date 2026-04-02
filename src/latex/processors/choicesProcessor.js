@@ -1,6 +1,7 @@
 import ChoicesNode from '../../components/nodes/ChoicesNode.vue'
 
 const CHOICES_PATTERN = /\\begin\{choices\}([\s\S]*?)\\end\{choices\}/g
+const ITEM_INDENT = '    '
 
 function parseChoiceItems(body = '') {
   return body
@@ -39,7 +40,10 @@ export const choicesProcessor = {
     }
   },
   serialize(node) {
-    const items = (node.items || []).map((item) => `\\item ${item}`).join('\n')
+    const items = (node.items || [])
+      .map((item) => `${ITEM_INDENT}\\item ${String(item ?? '').replace(/\n/g, `\n${ITEM_INDENT}`)}`)
+      .join('\n')
+
     return `\\begin{choices}\n${items}\n\\end{choices}`
   },
 }
