@@ -41,9 +41,13 @@ const latex = ref(String.raw`2026 年普通高中招生统一考试模拟卷
 \end{choices}
 
 2. 某校高一年级五个班参加“劳动教育周”实践活动，完成任务人数统计如图：
-\begin{center}
+
 \includegraphics[width=8cm]{${demoImageSrc}}
-\end{center}
+
+
+
+
+
 根据图中信息，下列说法正确的是 \paren{}。
 \begin{choices}
 \item 第三个班完成任务的人数最多

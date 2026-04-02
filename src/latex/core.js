@@ -3,6 +3,7 @@ export function createTextNode(content, id) {
     id,
     type: 'text',
     content,
+    previewContent: content,
   }
 }
 
@@ -17,30 +18,28 @@ function isBlockNode(node, processorMap) {
 function normalizeBlockWhitespace(nodes, processors) {
   const processorMap = new Map(processors.map((processor) => [processor.type, processor]))
 
-  return nodes
-    .map((node, index) => {
-      if (node.type !== 'text') {
-        return node
-      }
+  return nodes.map((node, index) => {
+    if (node.type !== 'text') {
+      return node
+    }
 
-      const previousNode = nodes[index - 1]
-      const nextNode = nodes[index + 1]
-      let content = node.content ?? ''
+    const previousNode = nodes[index - 1]
+    const nextNode = nodes[index + 1]
+    let previewContent = node.content ?? ''
 
-      if (isBlockNode(previousNode, processorMap)) {
-        content = content.replace(/^\s+/, '')
-      }
+    if (isBlockNode(previousNode, processorMap)) {
+      previewContent = previewContent.replace(/^\s+/, '')
+    }
 
-      if (isBlockNode(nextNode, processorMap)) {
-        content = content.replace(/\s+$/, '')
-      }
+    if (isBlockNode(nextNode, processorMap)) {
+      previewContent = previewContent.replace(/\s+$/, '')
+    }
 
-      return {
-        ...node,
-        content,
-      }
-    })
-    .filter((node, index, list) => node.type !== 'text' || node.content !== '' || list.length === 1)
+    return {
+      ...node,
+      previewContent,
+    }
+  })
 }
 
 function sortProcessors(processors = []) {

@@ -17,7 +17,7 @@ const injectedInlineCommandHandlers = inject(INLINE_COMMAND_HANDLERS_KEY, comput
 
 const inlineNodes = computed(() =>
   parseInlineContent(
-    normalizeLatexTextForPreview(props.node.content),
+    normalizeLatexTextForPreview(props.node.previewContent ?? props.node.content),
     Object.keys(injectedInlineCommandHandlers.value),
   ).map((node) => normalizeInlineNode(node, injectedInlineCommandHandlers.value)),
 )
