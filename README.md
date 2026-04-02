@@ -1,8 +1,13 @@
 # latex-renderer-vue
 
-A Vue 3 LaTeX renderer component with extensible block processors and inline command handlers.
+A Vue 3 LaTeX renderer component library with extensible block processors and inline command handlers.
 
-This repository is set up for direct GitHub installation in Vue 3 + Vite projects.
+This repository now uses a real library build:
+
+- source entry: `src/index.js`
+- package entry: `dist/index.js`
+- CommonJS entry: `dist/index.cjs`
+- Git installs build the package through `prepare`
 
 ## What It Supports
 
@@ -24,6 +29,8 @@ If your project uses npm:
 ```sh
 npm install github:<your-github-name>/latex-renderer-vue
 ```
+
+The Git dependency will run `prepare`, generate `dist/`, and then expose the compiled package entry.
 
 ## Basic Usage
 
@@ -168,6 +175,9 @@ const nextInlineCommands = {
 pnpm install
 pnpm dev
 pnpm build
+pnpm build:demo
 ```
 
-The demo page lives in `src/views/HomeView.vue`.
+- `pnpm build` builds the package library
+- `pnpm build:demo` builds the local demo page
+- the demo page lives in `src/views/HomeView.vue`
