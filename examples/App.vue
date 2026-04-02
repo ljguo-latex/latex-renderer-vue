@@ -36,7 +36,30 @@ const readonlyLatex = String.raw`这是只读渲染示例：$a^2 + b^2 = c^2$，
 \item $x^3$
 \item $\sqrt{x}$
 \item $\frac{1}{x}$
-\end{choices}`
+\end{choices}
+
+这是公式：$E=mc^2$ \paren{}.
+
+
+这是公式：$E=mc^2$ \blank{}.
+
+\begin{enumerate}[label = \alph*]
+\item $x^2$
+\item ddsfsd
+\item 我的
+\end{enumerate}
+
+\includegraphics[width=5cm,xxx]{/image.png}
+\begin{choices}
+\item $x^2$
+\item $x^3$
+\item $\sqrt{x}$
+\item $\frac{1}{x}$
+\item 啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场啊说是市场
+\item aaa
+\end{choices}
+
+`
 
 const editableLatex = ref(String.raw`这是可编辑示例，点击图片后会出现工具条：
 \includegraphics[width=5cm]{${demoImageSrc}}
