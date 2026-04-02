@@ -25,14 +25,14 @@ defineProps({
 
 .paren-command__mark {
   color: var(--latex-renderer-theme-color);
-  font-size: 1.05em;
+  font-size: 1.1em;
   line-height: 1;
+  font-weight: 700;
 }
 
 .paren-command__space {
   display: inline-block;
   min-width: 2em;
-  /* border-bottom: 2px solid rgba(43, 57, 72, 0.45); */
   transform: translateY(-0.08em);
 }
 </style>

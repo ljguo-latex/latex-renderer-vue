@@ -17,6 +17,6 @@ defineProps({
   min-width: 4.5em;
   height: 0.5em;
   vertical-align: -0.15em;
-  border-bottom: 1px solid var(--latex-renderer-theme-color);
+  border-bottom: 2px solid var(--latex-renderer-theme-color);
 }
 </style>
