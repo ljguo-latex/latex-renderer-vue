@@ -205,7 +205,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <figure
+  <div
     ref="root"
     class="resizable-image"
     :class="[
@@ -265,12 +265,13 @@ onBeforeUnmount(() => {
         <code>{{ src }}</code>
       </div>
     </div>
-  </figure>
+  </div>
 </template>
 
 <style scoped>
 .resizable-image {
   display: block;
+  margin: 0;
   width: fit-content;
   max-width: 100%;
   position: relative;
