@@ -1,0 +1,46 @@
+:root {
+  --page-background: #f3ede6;
+  --page-background-accent: #d9edf1;
+  --surface: rgba(255, 253, 249, 0.8);
+  --text-primary: #182025;
+  --text-secondary: #5d6670;
+  --border-soft: rgba(19, 31, 42, 0.1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at top, rgba(255, 244, 213, 0.9), transparent 30%),
+    radial-gradient(circle at 90% 12%, rgba(167, 221, 235, 0.55), transparent 22%),
+    linear-gradient(180deg, var(--page-background), #f8f5f0 55%, #eef3f5);
+  line-height: 1.6;
+  font-family:
+    'Avenir Next',
+    'Segoe UI',
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Noto Sans SC',
+    sans-serif;
+  font-size: 15px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+textarea,
+input {
+  font: inherit;
+}

@@ -1,0 +1,29 @@
+@import './base.css';
+
+#app {
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+code,
+pre,
+textarea {
+  font-family:
+    'SF Mono',
+    'Monaco',
+    'Inconsolata',
+    'Fira Code',
+    monospace;
+}
+
+@media (min-width: 768px) {
+  #app {
+    padding: 2rem;
+  }
+}
