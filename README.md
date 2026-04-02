@@ -42,7 +42,7 @@ import LatexRenderer from 'latex-renderer-vue'
 
 const latex = ref(String.raw`
 这是公式：$E=mc^2$
-\includegraphics[width=5cm]{/image.png}
+\includegraphics[width=5cm]{/path/to/image.png}
 \begin{choices}
 \item $x^2$
 \item $x^3$
