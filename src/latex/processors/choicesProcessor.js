@@ -63,11 +63,6 @@ function splitItems(body = '') {
 function parseChoiceItems(body = '', processors = []) {
   const rawItems = splitItems(body)
 
-  console.log('[choicesProcessor] 分割后的项目数:', rawItems.length)
-  rawItems.forEach((item, idx) => {
-    console.log(`[choicesProcessor] 项目 ${idx}:`, item.substring(0, 50))
-  })
-
   // 递归解析每个项目的内容
   return rawItems.map(itemContent => parseItemContent(itemContent, processors))
 }
