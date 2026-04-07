@@ -91,6 +91,7 @@ export function parseLatex(input = '', processors = []) {
 
     const parsedNode = nextMatch.processor.parse(nextMatch, {
       id: `${nextMatch.processor.type}_${++nodeCount}`,
+      processors: orderedProcessors,
     })
 
     nodes.push(parsedNode)

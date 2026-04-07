@@ -45,6 +45,7 @@ const themeStyles = computed(() => ({
 
 provide(INLINE_COMMAND_HANDLERS_KEY, computed(() => props.inlineCommands))
 provide(IMAGE_SRC_RESOLVER_KEY, computed(() => props.imageSrcResolver))
+provide('latex-processors', activeProcessors)
 
 function isNodeEditable(node) {
   const processor = processorRegistry.value.get(node.type)

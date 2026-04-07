@@ -1,6 +1,8 @@
 <script setup>
+import ContentNode from './ContentNode.vue'
 import TextNode from './TextNode.vue'
 import { formatEnumerateLabel } from '../../latex/enumerateLabel'
+import { inject } from 'vue'
 
 const props = defineProps({
   node: {
@@ -9,12 +11,29 @@ const props = defineProps({
   },
 })
 
+const processors = inject('latex-processors', [])
+
 function createTextNode(content, index) {
   return {
     id: `${props.node.id}_${index}`,
     type: 'text',
     content,
   }
+}
+
+// 判断是否为简单文本项
+function isSimpleItem(item) {
+  return typeof item === 'string' ||
+    (Array.isArray(item) && item.length === 1 && item[0].type === 'text')
+}
+
+// 提取简单文本内容
+function getSimpleContent(item) {
+  if (typeof item === 'string') return item
+  if (Array.isArray(item) && item.length === 1 && item[0].type === 'text') {
+    return item[0].content
+  }
+  return null
 }
 </script>
 
@@ -24,7 +43,20 @@ function createTextNode(content, index) {
       <span class="enumerate-node__label">
         {{ formatEnumerateLabel(node.options?.label || '(\\arabic*)', index + 1) }}
       </span>
-      <TextNode class="enumerate-node__content" :node="createTextNode(item, index)" />
+
+      <!-- 简单文本项（向后兼容） -->
+      <TextNode
+        v-if="isSimpleItem(item)"
+        class="enumerate-node__content"
+        :node="createTextNode(getSimpleContent(item), index)"
+      />
+
+      <!-- 复杂项（包含嵌套块） -->
+      <ContentNode
+        v-else
+        class="enumerate-node__content"
+        :nodes="item"
+      />
     </li>
   </ol>
 </template>

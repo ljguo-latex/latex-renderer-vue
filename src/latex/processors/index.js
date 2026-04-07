@@ -1,7 +1,7 @@
 import TextNode from '../../components/nodes/TextNode.vue'
-import { choicesProcessor } from './choicesProcessor'
-import { enumerateProcessor } from './enumerateProcessor'
-import { imageProcessor } from './imageProcessor'
+import { choicesProcessor } from './choicesProcessor.js'
+import { enumerateProcessor } from './enumerateProcessor.js'
+import { imageProcessor } from './imageProcessor.js'
 
 export const textProcessor = {
   name: 'text',

@@ -1,6 +1,7 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import ContentNode from './ContentNode.vue'
 import TextNode from './TextNode.vue'
 
 const LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
@@ -11,6 +12,8 @@ const props = defineProps({
     required: true,
   },
 })
+
+const processors = inject('latex-processors', [])
 
 const container = ref(null)
 const measureRoot = ref(null)
@@ -27,6 +30,21 @@ function createTextNode(content, index, prefix = 'text') {
     type: 'text',
     content,
   }
+}
+
+// 判断是否为简单文本项
+function isSimpleItem(item) {
+  return typeof item === 'string' ||
+    (Array.isArray(item) && item.length === 1 && item[0].type === 'text')
+}
+
+// 提取简单文本内容
+function getSimpleContent(item) {
+  if (typeof item === 'string') return item
+  if (Array.isArray(item) && item.length === 1 && item[0].type === 'text') {
+    return item[0].content
+  }
+  return null
 }
 
 function resolveColumnCount(longestItemWidth, width, itemCount) {
@@ -131,7 +149,20 @@ onBeforeUnmount(() => {
     <ol class="choices-node" :style="choicesStyle">
       <li v-for="(item, index) in node.items" :key="`${node.id}_${index}`" class="choices-node__item">
         <span class="choices-node__label">{{ LABELS[index] || `${index + 1}` }}.</span>
-        <TextNode class="choices-node__content" :node="createTextNode(item, index)" />
+
+        <!-- 简单文本项（向后兼容） -->
+        <TextNode
+          v-if="isSimpleItem(item)"
+          class="choices-node__content"
+          :node="createTextNode(getSimpleContent(item), index)"
+        />
+
+        <!-- 复杂项（包含嵌套块） -->
+        <ContentNode
+          v-else
+          class="choices-node__content"
+          :nodes="item"
+        />
       </li>
     </ol>
 
@@ -143,7 +174,20 @@ onBeforeUnmount(() => {
         data-choice-measure-item
       >
         <span class="choices-node__label">{{ LABELS[index] || `${index + 1}` }}.</span>
-        <TextNode class="choices-node__measure-content" :node="createTextNode(item, index, 'measure')" />
+
+        <!-- 简单文本项（向后兼容） -->
+        <TextNode
+          v-if="isSimpleItem(item)"
+          class="choices-node__measure-content"
+          :node="createTextNode(getSimpleContent(item), index, 'measure')"
+        />
+
+        <!-- 复杂项（包含嵌套块） -->
+        <ContentNode
+          v-else
+          class="choices-node__measure-content"
+          :nodes="item"
+        />
       </div>
     </div>
   </div>
