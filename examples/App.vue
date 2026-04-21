@@ -22,7 +22,17 @@ const demoImageSrc = `data:image/svg+xml;utf8,${encodeURIComponent(`
 </svg>
 `)}`
 
-const latex = ref(String.raw`2026 年普通高中招生统一考试模拟卷
+const latex = ref(String.raw`内联命令兼容性验证
+
+非数学模式：\paren{}，\blank{}
+行内数学模式：$a=\paren{}$，$f(x)=\blank{}+1$
+另一种行内数学模式：\(x=\paren{}\)
+块级数学模式：
+$$
+y=\blank{}
+$$
+
+2026 年普通高中招生统一考试模拟卷
 数学试题
 
 本试卷共 4 题，满分 50 分，考试时间 40 分钟。

@@ -18,7 +18,7 @@ const injectedInlineCommandHandlers = inject(INLINE_COMMAND_HANDLERS_KEY, comput
 const inlineNodes = computed(() =>
   parseInlineContent(
     normalizeLatexTextForPreview(props.node.previewContent ?? props.node.content),
-    Object.keys(injectedInlineCommandHandlers.value),
+    injectedInlineCommandHandlers.value,
   ).map((node) => normalizeInlineNode(node, injectedInlineCommandHandlers.value)),
 )
 </script>
@@ -34,5 +34,6 @@ const inlineNodes = computed(() =>
   color: #182025;
   line-height: 1.8;
   word-break: break-word;
+  white-space: pre-wrap;
 }
 </style>

@@ -19,6 +19,17 @@ const testNesting = ref(String.raw`测试：Enumerate 和 Choices 嵌套支持
 \end{choices}
 \end{enumerate}
 
+a $a=\paren{}$
+
+a $a=\blank{}$
+
+aa=\blank{}
+
+
+
+aa=\paren{}
+
+
 测试用例 2：向后兼容性（简单列表）
 \begin{enumerate}
 \item 简单的文本项
