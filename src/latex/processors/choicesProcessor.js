@@ -1,7 +1,7 @@
 import ChoicesNode from '../../components/nodes/ChoicesNode.vue'
+import { findEnvironmentBlock } from '../environment'
 import { parseItemContent } from '../itemParser'
 
-const CHOICES_PATTERN = /\\begin\{choices\}([\s\S]*?)\\end\{choices\}/g
 const ITEM_INDENT = '    '
 
 /**
@@ -74,26 +74,14 @@ export const choicesProcessor = {
   priority: 90,
   component: ChoicesNode,
   find(input, from) {
-    const pattern = new RegExp(CHOICES_PATTERN)
-    pattern.lastIndex = from
-    const match = pattern.exec(input)
-
-    if (!match) {
-      return null
-    }
-
-    return {
-      start: match.index,
-      end: match.index + match[0].length,
-      match,
-    }
+    return findEnvironmentBlock(input, from, 'choices')
   },
   parse(result, { id, processors = [] }) {
     return {
       id,
       type: 'choices',
-      items: parseChoiceItems(result.match[1] || '', processors),
-      original: result.match[0],
+      items: parseChoiceItems(result.body || '', processors),
+      original: result.original,
     }
   },
   serialize(node) {

@@ -1,7 +1,7 @@
 import EnumerateNode from '../../components/nodes/EnumerateNode.vue'
+import { findEnvironmentBlock } from '../environment'
 import { parseItemContent } from '../itemParser'
 
-const ENUMERATE_PATTERN = /\\begin\{enumerate\}(?:\[(.*?)\])?([\s\S]*?)\\end\{enumerate\}/g
 const ITEM_INDENT = '    '
 
 /**
@@ -96,27 +96,15 @@ export const enumerateProcessor = {
   priority: 80,
   component: EnumerateNode,
   find(input, from) {
-    const pattern = new RegExp(ENUMERATE_PATTERN)
-    pattern.lastIndex = from
-    const match = pattern.exec(input)
-
-    if (!match) {
-      return null
-    }
-
-    return {
-      start: match.index,
-      end: match.index + match[0].length,
-      match,
-    }
+    return findEnvironmentBlock(input, from, 'enumerate')
   },
   parse(result, { id, processors = [] }) {
     return {
       id,
       type: 'enumerate',
-      items: parseItems(result.match[2] || '', processors),
-      options: parseOptions(result.match[1] || ''),
-      original: result.match[0],
+      items: parseItems(result.body || '', processors),
+      options: parseOptions(result.optionString || ''),
+      original: result.original,
     }
   },
   serialize(node) {
