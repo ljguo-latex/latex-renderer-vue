@@ -4,6 +4,47 @@ import { LatexRenderer } from '../src/index.js'
 
 const testNesting = ref(String.raw`测试：Enumerate 和 Choices 嵌套支持
 
+测试用例 0：常见数学环境
+\begin{equation}
+E = mc^2
+\end{equation}
+
+\begin{equation*}
+\int_0^1 x^2\,dx = \frac{1}{3}
+\end{equation*}
+
+\begin{align}
+f(x) &= x^2 - 4x + 1 \\
+f'(x) &= 2x - 4
+\end{align}
+
+\begin{align*}
+a^2 + b^2 &= c^2 \\
+(a+b)^2 &= a^2 + 2ab + b^2
+\end{align*}
+
+\begin{alignat*}{2}
+x &= 1, \qquad & y &= 2 \\
+u &= 3,        & v &= 4
+\end{alignat*}
+
+\begin{gather}
+x + y = 1 \\
+2x - y = 3
+\end{gather}
+
+\begin{multline*}
+S = a_1 + a_2 + a_3 + a_4 + a_5 \\
++ a_6 + a_7 + a_8 + a_9 + a_{10}
+\end{multline*}
+
+\begin{equation*}
+\begin{cases}
+x + y = 1, \\
+x - y = 3.
+\end{cases}
+\end{equation*}
+
 测试用例 1：Enumerate 嵌套 Choices
 \begin{enumerate}
 \item 第一题的题干
