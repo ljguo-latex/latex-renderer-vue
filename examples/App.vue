@@ -91,7 +91,12 @@ $$
     </header>
 
     <section class="exam-demo__paper">
-      <LatexRenderer v-model="latex" :editable-images="true" :theme="{ color: '#1f5c8f' }" :imageSrcResolver="src => src" />
+      <LatexRenderer
+        v-model="latex"
+        :editable-images="true"
+        :theme="{ color: '#1f5c8f', textColor: '#182025' }"
+        :imageSrcResolver="src => src"
+      />
     </section>
 
     <section class="exam-demo__source">

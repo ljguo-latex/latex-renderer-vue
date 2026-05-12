@@ -31,7 +31,7 @@ const inlineNodes = computed(() =>
 
 <style scoped>
 .text-node {
-  color: #182025;
+  color: var(--latex-renderer-text-color);
   line-height: 1.8;
   word-break: break-word;
   white-space: pre-wrap;

@@ -115,7 +115,7 @@ aa=\paren{}
     </header>
 
     <section class="test-nesting__content">
-      <LatexRenderer v-model="testNesting" :theme="{ color: '#1f5c8f' }" />
+      <LatexRenderer v-model="testNesting" :theme="{ color: '#1f5c8f', textColor: '#f3d3d3' }" />
     </section>
 
     <section class="test-nesting__source">

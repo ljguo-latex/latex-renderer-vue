@@ -41,6 +41,7 @@ const processorRegistry = computed(() => createProcessorRegistry(activeProcessor
 const nodes = computed(() => parseLatex(props.modelValue, activeProcessors.value))
 const themeStyles = computed(() => ({
   '--latex-renderer-theme-color': props.theme?.color || '#000000',
+  '--latex-renderer-text-color': props.theme?.textColor || '#182025',
 }))
 
 provide(INLINE_COMMAND_HANDLERS_KEY, computed(() => props.inlineCommands))

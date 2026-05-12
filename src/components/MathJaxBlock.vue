@@ -49,7 +49,7 @@ watch(
 .mathjax-block {
   min-height: 1.6em;
   white-space: pre-wrap;
-  color: #182025;
+  color: var(--latex-renderer-text-color);
   line-height: 1.8;
   word-break: break-word;
 }

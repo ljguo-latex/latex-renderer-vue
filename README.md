@@ -76,7 +76,7 @@ Readonly rendering:
 - `processors?: Array`
 - `inlineCommands?: Record<string, { name: string, component: Component }>`
 - `imageSrcResolver?: ({ src, node }) => string | Promise<string>`
-- `theme?: { color?: string }`
+- `theme?: { color?: string, textColor?: string }`
 
 Emits:
 
@@ -113,6 +113,7 @@ import LatexRenderer from 'latex-renderer-vue'
 
 const theme = {
   color: '#0f766e',
+  textColor: '#182025',
 }
 </script>
 
@@ -124,13 +125,15 @@ const theme = {
 </template>
 ```
 
-This single color is used by:
+`theme.color` is used by:
 
 - image toolbar active state
 - choices labels
 - enumerate labels
 - `\paren` brackets
 - `\blank` underline
+
+`theme.textColor` controls normal rendered text and MathJax text.
 
 ### Named Exports
 
