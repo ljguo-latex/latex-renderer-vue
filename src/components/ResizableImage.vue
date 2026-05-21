@@ -1,5 +1,5 @@
 demo<script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import {
   MAX_WIDTH_CM,
@@ -13,6 +13,7 @@ import {
 } from '../utils/latex'
 
 const WIDTH_COMMIT_DEBOUNCE_MS = 140
+const TOOLBAR_GAP_PX = 8
 const ALIGNMENT_OPTIONS = [
   { value: 'default', label: '无' },
   { value: 'left', label: '左' },
@@ -51,9 +52,13 @@ const liveWidthPx = ref(220)
 const hasLoadError = ref(false)
 const isSliderActive = ref(false)
 const isToolbarOpen = ref(false)
+const toolbarPlacement = ref('top')
 const root = ref(null)
+const toolbar = ref(null)
 
 let widthCommitTimer = null
+let placementFrame = null
+let resizeObserver = null
 
 const widthFromOptions = computed(() => parseLengthToPx(props.options?.width))
 
@@ -79,6 +84,10 @@ const figureClass = computed(() => {
   return 'resizable-image--default'
 })
 
+const toolbarPlacementClass = computed(() =>
+  toolbarPlacement.value === 'bottom' ? 'resizable-image--toolbar-bottom' : 'resizable-image--toolbar-top',
+)
+
 function syncWidthFromProps() {
   if (isSliderActive.value) {
     return
@@ -100,6 +109,7 @@ function onImageLoad(event) {
   naturalHeight.value = event.target.naturalHeight
   hasLoadError.value = false
   syncWidthFromProps()
+  scheduleToolbarPlacementUpdate()
 }
 
 function onImageError() {
@@ -136,6 +146,7 @@ function updateWidthFromSlider(event) {
   const nextWidth = Math.max(MIN_WIDTH_PX, clampImageWidthPx(cmToPx(Number(event.target.value))))
 
   liveWidthPx.value = nextWidth
+  scheduleToolbarPlacementUpdate()
 }
 
 function startSliderInteraction() {
@@ -145,6 +156,7 @@ function startSliderInteraction() {
 
   isSliderActive.value = true
   isToolbarOpen.value = true
+  scheduleToolbarPlacementUpdate()
 }
 
 function finishSliderInteraction() {
@@ -162,6 +174,7 @@ function updateAlignment(alignment) {
   }
 
   isToolbarOpen.value = true
+  scheduleToolbarPlacementUpdate()
   emit('commit-alignment', {
     id: props.id,
     alignment,
@@ -174,6 +187,7 @@ function openToolbar() {
   }
 
   isToolbarOpen.value = true
+  scheduleToolbarPlacementUpdate()
 }
 
 function handleDocumentPointerDown(event) {
@@ -186,8 +200,80 @@ function handleDocumentPointerDown(event) {
   }
 }
 
+function getVisibleBounds() {
+  const bounds = {
+    top: 0,
+    right: window.innerWidth,
+    bottom: window.innerHeight,
+    left: 0,
+  }
+
+  let element = root.value?.parentElement
+  while (element) {
+    const style = window.getComputedStyle(element)
+    const overflow = `${style.overflow} ${style.overflowX} ${style.overflowY}`
+
+    if (/(auto|scroll|hidden|clip)/.test(overflow)) {
+      const rect = element.getBoundingClientRect()
+      bounds.top = Math.max(bounds.top, rect.top)
+      bounds.right = Math.min(bounds.right, rect.right)
+      bounds.bottom = Math.min(bounds.bottom, rect.bottom)
+      bounds.left = Math.max(bounds.left, rect.left)
+    }
+
+    element = element.parentElement
+  }
+
+  return bounds
+}
+
+function updateToolbarPlacement() {
+  placementFrame = null
+
+  if (!props.editable || !isToolbarOpen.value || !root.value || !toolbar.value) {
+    return
+  }
+
+  const rootRect = root.value.getBoundingClientRect()
+  const toolbarRect = toolbar.value.getBoundingClientRect()
+  const visibleBounds = getVisibleBounds()
+  const requiredSpace = toolbarRect.height + TOOLBAR_GAP_PX
+  const topSpace = rootRect.top - visibleBounds.top
+  const bottomSpace = visibleBounds.bottom - rootRect.bottom
+
+  toolbarPlacement.value = topSpace >= requiredSpace || topSpace >= bottomSpace ? 'top' : 'bottom'
+}
+
+function scheduleToolbarPlacementUpdate() {
+  if (!props.editable) {
+    return
+  }
+
+  nextTick(() => {
+    if (placementFrame) {
+      window.cancelAnimationFrame(placementFrame)
+    }
+
+    placementFrame = window.requestAnimationFrame(updateToolbarPlacement)
+  })
+}
+
 onMounted(() => {
   window.addEventListener('pointerdown', handleDocumentPointerDown)
+  window.addEventListener('resize', scheduleToolbarPlacementUpdate)
+  window.addEventListener('scroll', scheduleToolbarPlacementUpdate, true)
+
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(scheduleToolbarPlacementUpdate)
+
+    if (root.value) {
+      resizeObserver.observe(root.value)
+    }
+
+    if (toolbar.value) {
+      resizeObserver.observe(toolbar.value)
+    }
+  }
 })
 
 onBeforeUnmount(() => {
@@ -200,7 +286,14 @@ onBeforeUnmount(() => {
     window.clearTimeout(widthCommitTimer)
   }
 
+  if (placementFrame) {
+    window.cancelAnimationFrame(placementFrame)
+  }
+
+  resizeObserver?.disconnect()
   window.removeEventListener('pointerdown', handleDocumentPointerDown)
+  window.removeEventListener('resize', scheduleToolbarPlacementUpdate)
+  window.removeEventListener('scroll', scheduleToolbarPlacementUpdate, true)
 })
 </script>
 
@@ -215,9 +308,10 @@ onBeforeUnmount(() => {
         'resizable-image--open': isToolbarOpen,
         'resizable-image--editable': editable,
       },
+      toolbarPlacementClass,
     ]"
   >
-    <div v-if="editable" class="resizable-image__toolbar">
+    <div v-if="editable" ref="toolbar" class="resizable-image__toolbar">
       <div class="resizable-image__alignment">
         <button
           v-for="option in ALIGNMENT_OPTIONS"
@@ -314,9 +408,19 @@ onBeforeUnmount(() => {
     transform 0.18s ease;
 }
 
+.resizable-image--toolbar-bottom .resizable-image__toolbar {
+  top: calc(100% + 0.5rem);
+  bottom: auto;
+  transform: translateY(-6px);
+}
+
 .resizable-image--center .resizable-image__toolbar {
   left: 50%;
   transform: translate(-50%, 6px);
+}
+
+.resizable-image--center.resizable-image--toolbar-bottom .resizable-image__toolbar {
+  transform: translate(-50%, -6px);
 }
 
 .resizable-image--right .resizable-image__toolbar {
