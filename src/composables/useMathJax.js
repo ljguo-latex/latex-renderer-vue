@@ -22,6 +22,9 @@ function createMathJaxConfig(resolve) {
       packages: { '[+]': ['mhchem', 'extpfeil'] },
       macros: {
         overarc: ['\\overset{\\Large\\frown}{#1}', 1],
+        circled: ['\\enclose{circle}{#1}', 1],
+        paren: ['\\left(\\qquad\\right)', 0],
+        blank: ['\\underline{\\qquad\\qquad}', 0],
       },
       processEscapes: true,
       processEnvironments: true,

@@ -85,6 +85,13 @@ aa=\paren{}
 
 aaa \circled{1}
 
+
+\begin{align}
+    adsa &= rhs \\
+
+    \circled{1}
+\end{align}
+
 非数学模式：选 \circled{1}，答案是 \circled{2}，参考 \circled{3}\circled{4}\circled{5}。
 行内数学模式：$y = \circled{1} \cdot x + \circled{2}$，$f(\circled{3}) = \circled{4}$
 另一种行内数学模式：\(S_\circled{1} + S_\circled{2} = S_\circled{3}\)
@@ -129,7 +136,7 @@ $$
     </header>
 
     <section class="test-nesting__content">
-      <LatexRenderer v-model="testNesting" :theme="{ color: '#1f5c8f', textColor: '#f3d3d3' }" />
+      <LatexRenderer v-model="testNesting" :theme="{ color: '#1f5c8f', textColor: '#000' }" />
     </section>
 
     <section class="test-nesting__source">
