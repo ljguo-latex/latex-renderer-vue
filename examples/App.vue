@@ -24,8 +24,8 @@ const demoImageSrc = `data:image/svg+xml;utf8,${encodeURIComponent(`
 
 const latex = ref(String.raw`内联命令兼容性验证
 
-非数学模式：\paren{}，\blank{}
-行内数学模式：$a=\paren{}$，$f(x)=\blank{}+1$
+非数学模式：\paren{}，\blank{}，\circled{1}\circled{2}\circled{3}
+行内数学模式：$a=\paren{}$，$f(x)=\blank{}+1$，$\circled{4}+\circled{5}$
 另一种行内数学模式：\(x=\paren{}\)
 块级数学模式：
 $$

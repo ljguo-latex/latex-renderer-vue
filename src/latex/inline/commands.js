@@ -1,4 +1,5 @@
 import BlankCommand from '../../components/inline/BlankCommand.vue'
+import CircledCommand from '../../components/inline/CircledCommand.vue'
 import InlineMathText from '../../components/inline/InlineMathText.vue'
 import InlineText from '../../components/inline/InlineText.vue'
 import ParenCommand from '../../components/inline/ParenCommand.vue'
@@ -13,6 +14,11 @@ export const inlineCommandHandlers = {
     name: 'paren',
     component: ParenCommand,
     toMath: () => '\\left(\\qquad\\right)',
+  },
+  circled: {
+    name: 'circled',
+    component: CircledCommand,
+    toMath: (node) => `\\enclose{circle}{${node.param ?? ''}}`,
   },
 }
 
