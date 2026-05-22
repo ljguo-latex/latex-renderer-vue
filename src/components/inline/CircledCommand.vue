@@ -22,8 +22,9 @@ defineProps({
   min-width: 1.25em;
   height: 1.25em;
   padding: 0 0.15em;
-  border: 1px solid currentColor;
+  border: 1px solid var(--latex-renderer-theme-color);
   border-radius: 50%;
+  color: var(--latex-renderer-theme-color);
   font-size: 0.8em;
   line-height: 1;
   vertical-align: 0.05em;
