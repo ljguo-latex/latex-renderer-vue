@@ -1,5 +1,6 @@
 import MathEnvironmentNode from '../../components/nodes/MathEnvironmentNode.vue'
 import { findEnvironmentBlock } from '../environment'
+import { findContainingMathSegment } from '../mathDelimiters.js'
 
 export const mathEnvironmentNames = [
   'equation',
@@ -38,7 +39,19 @@ function findNextMathEnvironment(input = '', from = 0) {
   let bestMatch = null
 
   for (const environmentName of mathEnvironmentNames) {
-    const match = findEnvironmentBlock(input, from, environmentName)
+    let cursor = from
+    let match = findEnvironmentBlock(input, cursor, environmentName)
+
+    while (match) {
+      const containingMathSegment = findContainingMathSegment(input, match.start)
+
+      if (!containingMathSegment) {
+        break
+      }
+
+      cursor = containingMathSegment.end
+      match = findEnvironmentBlock(input, cursor, environmentName)
+    }
 
     if (!match) {
       continue

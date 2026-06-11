@@ -1,3 +1,5 @@
+import { findNextMathSegment } from '../mathDelimiters.js'
+
 function createTextNode(content, id) {
   return {
     id,
@@ -39,81 +41,6 @@ function buildCommandPattern(commandNames = []) {
 
 function cloneRegExp(pattern) {
   return new RegExp(pattern.source, pattern.flags)
-}
-
-function isEscaped(input, index) {
-  let slashCount = 0
-  let cursor = index - 1
-
-  while (cursor >= 0 && input[cursor] === '\\') {
-    slashCount += 1
-    cursor -= 1
-  }
-
-  return slashCount % 2 === 1
-}
-
-const MATH_DELIMITERS = [
-  { open: '$$', close: '$$' },
-  { open: '\\[', close: '\\]' },
-  { open: '\\(', close: '\\)' },
-  { open: '$', close: '$' },
-]
-
-function canStartDelimiter(input, delimiter, index) {
-  if (!input.startsWith(delimiter.open, index)) {
-    return false
-  }
-
-  if (delimiter.open === '$' || delimiter.open === '$$') {
-    return !isEscaped(input, index)
-  }
-
-  return true
-}
-
-function findClosingDelimiter(input, delimiter, startIndex) {
-  let cursor = startIndex + delimiter.open.length
-
-  while (cursor < input.length) {
-    const nextIndex = input.indexOf(delimiter.close, cursor)
-
-    if (nextIndex === -1) {
-      return -1
-    }
-
-    if ((delimiter.close === '$' || delimiter.close === '$$') && isEscaped(input, nextIndex)) {
-      cursor = nextIndex + 1
-      continue
-    }
-
-    return nextIndex
-  }
-
-  return -1
-}
-
-function findNextMathSegment(input, from = 0) {
-  for (let index = from; index < input.length; index += 1) {
-    for (const delimiter of MATH_DELIMITERS) {
-      if (!canStartDelimiter(input, delimiter, index)) {
-        continue
-      }
-
-      const closingIndex = findClosingDelimiter(input, delimiter, index)
-
-      if (closingIndex === -1) {
-        continue
-      }
-
-      return {
-        start: index,
-        end: closingIndex + delimiter.close.length,
-      }
-    }
-  }
-
-  return null
 }
 
 function splitMathSegments(content = '') {

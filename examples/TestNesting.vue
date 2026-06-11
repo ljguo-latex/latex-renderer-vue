@@ -45,6 +45,9 @@ x - y = 3.
 \end{cases}
 \end{equation*}
 
+测试用例 0.5：行内 left/right 包裹 array
+$\left\{ \begin{array}{l}x = 1\\ y = 0 \end{array} \right.$
+
 测试用例 1：Enumerate 嵌套 Choices
 \begin{enumerate}
 \item 第一题的题干
