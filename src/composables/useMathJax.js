@@ -1,3 +1,5 @@
+import { rewriteInlineCommandsInText } from '../latex/mathTextCommands.js'
+
 let mathJaxPromise
 
 function createMathJaxConfig(resolve) {
@@ -97,7 +99,7 @@ export async function typesetMath(element, latex) {
     return
   }
 
-  element.textContent = latex || ''
+  element.textContent = rewriteInlineCommandsInText(latex || '')
 
   const mathJax = await loadMathJax()
 
