@@ -4,6 +4,20 @@ import { LatexRenderer } from '../src/index.js'
 
 const testNesting = ref(String.raw`测试：Enumerate 和 Choices 嵌套支持
 
+将已知等式两边分别平方可得:
+\begin{equation*}
+|\vec{a} + 2\vec{b}|^2 = |\vec{a}|^2 + 4\vec{a} \cdot \vec{b} + 4|\vec{b}|^2 = 25 \quad \text{\circled{1}}
+\end{equation*}
+\begin{equation*}
+|\vec{a} - 2\vec{b}|^2 = |\vec{a}|^2 - 4\vec{a} \cdot \vec{b} + 4|\vec{b}|^2 = 9 \quad \text{\circled{2}}
+\end{equation*}
+两式相减 \circled{1} - \circled{2} 可得:
+\begin{equation*}
+8\vec{a} \cdot \vec{b} = 16
+\end{equation*}
+所以 $\vec{a} \cdot \vec{b} = 2$.
+故选 B.
+
 测试用例 0：常见数学环境
 \begin{equation}
 E = mc^2
