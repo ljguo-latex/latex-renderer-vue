@@ -1,9 +1,11 @@
 import TextNode from '../../components/nodes/TextNode.vue'
+import { centerProcessor } from './centerProcessor.js'
 import { choicesProcessor } from './choicesProcessor.js'
 import { enumerateProcessor } from './enumerateProcessor.js'
 import { imageProcessor } from './imageProcessor.js'
 import { mathEnvironmentProcessor } from './mathEnvironmentProcessor.js'
 import { minipageProcessor } from './minipageProcessor.js'
+import { tabularProcessor } from './tabularProcessor.js'
 
 export const textProcessor = {
   name: 'text',
@@ -14,9 +16,11 @@ export const textProcessor = {
 
 export const defaultProcessors = [
   imageProcessor,
+  centerProcessor,
   choicesProcessor,
   enumerateProcessor,
   minipageProcessor,
+  tabularProcessor,
   mathEnvironmentProcessor,
 ]
 

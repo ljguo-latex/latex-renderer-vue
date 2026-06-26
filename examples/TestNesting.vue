@@ -62,6 +62,29 @@ x - y = 3.
 测试用例 0.5：行内 left/right 包裹 array
 $\left\{ \begin{array}{l}x = 1\\ y = 0 \end{array} \right.$
 
+
+\begin{center}
+aaaa
+\end{center}
+
+\begin{flushleft}
+aaaa
+\end{flushleft}
+
+\begin{flushright}
+aaaa
+\end{flushright}
+测试用例 0.6：center 包裹 tabular
+\begin{center}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+月份 & 1 & 2 & 3 & 4 & 5 & 6 \\
+\hline
+比去年同月增长/\% & $-1.8$ & $0$ & $0.2$ & $-1.5$ & $0.3$ & $0.4$ \\
+\hline
+\end{tabular}
+\end{center}
+
 测试用例 1：Enumerate 嵌套 Choices
 \begin{enumerate}
 \item 第一题的题干
@@ -223,6 +246,8 @@ function collectNodes(nodes = [], type) {
 }
 
 const minipageNodes = computed(() => collectNodes(parsedNodes.value, 'minipage'))
+const centerNodes = computed(() => collectNodes(parsedNodes.value, 'center'))
+const tabularNodes = computed(() => collectNodes(parsedNodes.value, 'tabular'))
 const enumerateNodes = computed(() => collectNodes(parsedNodes.value, 'enumerate'))
 const serializedLatex = computed(() => serializeLatex(parsedNodes.value, defaultProcessors))
 const hasVisibleWhitespaceBetweenAdjacentMinipages = computed(() =>
@@ -275,6 +300,37 @@ const minipageAssertions = computed(() => [
       serializedLatex.value.includes('\\begin{minipage}[t]{90%}'),
   },
 ])
+
+const tabularAssertions = computed(() => [
+  {
+    label: 'center 环境可解析为块级居中节点',
+    passed: centerNodes.value.some((node) => node.environmentName === 'center'),
+  },
+  {
+    label: 'flushleft 环境可解析为块级左对齐节点',
+    passed: centerNodes.value.some((node) => node.environmentName === 'flushleft'),
+  },
+  {
+    label: 'flushright 环境可解析为块级右对齐节点',
+    passed: centerNodes.value.some((node) => node.environmentName === 'flushright'),
+  },
+  {
+    label: 'tabular 可解析为表格节点',
+    passed: tabularNodes.value.length >= 1,
+  },
+  {
+    label: 'tabular 正确拆分 2 行 7 列',
+    passed: tabularNodes.value.some(
+      (node) => node.rows?.length === 2 && node.rows.every((row) => row.cells?.length === 7),
+    ),
+  },
+  {
+    label: '\\hline 可映射为表格横线',
+    passed: tabularNodes.value.some(
+      (node) => node.rows?.[0]?.topBorder && node.rows?.[0]?.bottomBorder && node.rows?.[1]?.bottomBorder,
+    ),
+  },
+])
 </script>
 
 <template>
@@ -293,6 +349,20 @@ const minipageAssertions = computed(() => [
       <ul>
         <li
           v-for="assertion in minipageAssertions"
+          :key="assertion.label"
+          :class="{ 'is-passed': assertion.passed, 'is-failed': !assertion.passed }"
+        >
+          <span>{{ assertion.passed ? 'PASS' : 'FAIL' }}</span>
+          {{ assertion.label }}
+        </li>
+      </ul>
+    </section>
+
+    <section class="test-nesting__assertions">
+      <h2>Tabular Assertions</h2>
+      <ul>
+        <li
+          v-for="assertion in tabularAssertions"
           :key="assertion.label"
           :class="{ 'is-passed': assertion.passed, 'is-failed': !assertion.passed }"
         >

@@ -36,6 +36,7 @@ const processorRegistry = computed(() => {
 
 .content-node :deep(.enumerate-node),
 .content-node :deep(.choices-node-wrap),
+.content-node :deep(.center-node),
 .content-node :deep(.math-environment-node) {
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
