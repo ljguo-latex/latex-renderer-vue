@@ -1,4 +1,5 @@
 import ChoicesNode from '../../components/nodes/ChoicesNode.vue'
+import { serializeLatex } from '../core'
 import { findEnvironmentBlock } from '../environment'
 import { parseItemContent } from '../itemParser'
 
@@ -84,7 +85,7 @@ export const choicesProcessor = {
       original: result.original,
     }
   },
-  serialize(node) {
+  serialize(node, { processors = [] } = {}) {
     const items = (node.items || [])
       .map((item) => {
         // 处理新格式（节点数组）和旧格式（字符串）
@@ -92,10 +93,7 @@ export const choicesProcessor = {
         if (typeof item === 'string') {
           itemContent = item
         } else if (Array.isArray(item)) {
-          // 导入 serializeLatex 并序列化嵌套节点
-          const { serializeLatex } = require('../core')
-          const { defaultProcessors } = require('../processors')
-          itemContent = serializeLatex(item, defaultProcessors)
+          itemContent = serializeLatex(item, processors)
         } else {
           itemContent = ''
         }

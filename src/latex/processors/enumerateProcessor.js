@@ -1,4 +1,5 @@
 import EnumerateNode from '../../components/nodes/EnumerateNode.vue'
+import { serializeLatex } from '../core'
 import { findEnvironmentBlock } from '../environment'
 import { parseItemContent } from '../itemParser'
 
@@ -107,7 +108,7 @@ export const enumerateProcessor = {
       original: result.original,
     }
   },
-  serialize(node) {
+  serialize(node, { processors = [] } = {}) {
     const label = node.options?.label
     const optionBlock = label ? `[label = ${label}]` : ''
 
@@ -118,10 +119,7 @@ export const enumerateProcessor = {
         if (typeof item === 'string') {
           itemContent = item
         } else if (Array.isArray(item)) {
-          // 导入 serializeLatex 并序列化嵌套节点
-          const { serializeLatex } = require('../core')
-          const { defaultProcessors } = require('../processors')
-          itemContent = serializeLatex(item, defaultProcessors)
+          itemContent = serializeLatex(item, processors)
         } else {
           itemContent = ''
         }

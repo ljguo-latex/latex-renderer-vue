@@ -15,6 +15,14 @@ function isBlockNode(node, processorMap) {
   return processorMap.get(node.type)?.block === true
 }
 
+function isInlineBoxNode(node, processorMap) {
+  if (!node || node.type === 'text') {
+    return false
+  }
+
+  return processorMap.get(node.type)?.inlineBox === true
+}
+
 function normalizeBlockWhitespace(nodes, processors) {
   const processorMap = new Map(processors.map((processor) => [processor.type, processor]))
 
@@ -26,6 +34,14 @@ function normalizeBlockWhitespace(nodes, processors) {
     const previousNode = nodes[index - 1]
     const nextNode = nodes[index + 1]
     let previewContent = node.content ?? ''
+
+    if (
+      isInlineBoxNode(previousNode, processorMap) &&
+      isInlineBoxNode(nextNode, processorMap) &&
+      /^\s+$/.test(previewContent)
+    ) {
+      previewContent = ''
+    }
 
     if (isBlockNode(previousNode, processorMap)) {
       previewContent = previewContent.replace(/^\s+/, '')
@@ -120,7 +136,7 @@ export function serializeLatex(nodes = [], processors = []) {
         return ''
       }
 
-      return processor.serialize(node)
+      return processor.serialize(node, { processors })
     })
     .join('')
 }

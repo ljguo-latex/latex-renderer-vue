@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from 'vue'
-import { LatexRenderer } from '../src/index.js'
+import { computed, ref } from 'vue'
+import { LatexRenderer, defaultProcessors, parseLatex, serializeLatex } from '../src/index.js'
 
 const testNesting = ref(String.raw`测试：Enumerate 和 Choices 嵌套支持
 
@@ -142,18 +142,164 @@ $$
 \item 选项C
 \item 选项D
 \end{choices}
+\end{enumerate}
+
+测试用例 4：Minipage 百分比和固定长度并排
+\begin{minipage}{48%}
+左侧百分比宽度，包含行内数学 $a^2+b^2=c^2$。
+\begin{enumerate}
+\item 左侧列表第一项
+\item 左侧列表第二项
+\end{enumerate}
+\end{minipage}
+\begin{minipage}{6cm}
+右侧固定长度 6cm。
+\begin{choices}
+\item 固定宽度选项 A
+\item 固定宽度选项 B
+\end{choices}
+\end{minipage}
+
+测试用例 5：Minipage 支持 textwidth / linewidth 相对宽度
+\begin{minipage}{0.5\textwidth}
+0.5\textwidth 应渲染为 50%。
+\end{minipage}
+\begin{minipage}{.35\linewidth}
+.35\linewidth 应渲染为 35%。
+\end{minipage}
+
+测试用例 6：Minipage 嵌套 Minipage
+\begin{minipage}[t]{90%}
+外层 minipage，带可选参数 [t]。
+\begin{minipage}{45%}
+内层左侧，固定在外层宽度内。
+\end{minipage}
+\begin{minipage}{45%}
+内层右侧，包含嵌套 choices。
+\begin{choices}
+\item 内层选项一
+\item 内层选项二
+\item 内层选项三
+\end{choices}
+\end{minipage}
+\end{minipage}
+
+测试用例 7：Enumerate 中嵌套 Minipage
+\begin{enumerate}
+\item 题干中的两个小栏：
+\begin{minipage}{42%}
+第一栏内容 $x=1$。
+\end{minipage}
+\begin{minipage}{42%}
+第二栏内容 $y=2$。
+\end{minipage}
+\item 后续普通题目保持原样。
 \end{enumerate}`)
+
+const parsedNodes = computed(() => parseLatex(testNesting.value, defaultProcessors))
+
+function collectNodes(nodes = [], type) {
+  return nodes.flatMap((node) => {
+    if (!node || typeof node !== 'object') {
+      return []
+    }
+
+    const nested = []
+
+    if (Array.isArray(node.children)) {
+      nested.push(...collectNodes(node.children, type))
+    }
+
+    if (Array.isArray(node.items)) {
+      node.items.forEach((item) => {
+        if (Array.isArray(item)) {
+          nested.push(...collectNodes(item, type))
+        }
+      })
+    }
+
+    return node.type === type ? [node, ...nested] : nested
+  })
+}
+
+const minipageNodes = computed(() => collectNodes(parsedNodes.value, 'minipage'))
+const enumerateNodes = computed(() => collectNodes(parsedNodes.value, 'enumerate'))
+const serializedLatex = computed(() => serializeLatex(parsedNodes.value, defaultProcessors))
+const hasVisibleWhitespaceBetweenAdjacentMinipages = computed(() =>
+  parsedNodes.value.some(
+    (node, index, nodes) =>
+      node.type === 'text' &&
+      /^\s+$/.test(node.content || '') &&
+      (node.previewContent || '') !== '' &&
+      nodes[index - 1]?.type === 'minipage' &&
+      nodes[index + 1]?.type === 'minipage',
+  ),
+)
+
+const minipageAssertions = computed(() => [
+  {
+    label: '百分比宽度 48% 可解析为 CSS 百分比',
+    passed: minipageNodes.value.some((node) => node.width?.raw === '48%' && node.width?.css === '48%'),
+  },
+  {
+    label: '固定长度 6cm 可作为 CSS 固定宽度',
+    passed: minipageNodes.value.some((node) => node.width?.raw === '6cm' && node.width?.css === '6cm'),
+  },
+  {
+    label: '0.5\\textwidth 可转换为 50%',
+    passed: minipageNodes.value.some((node) => node.width?.raw === '0.5\\textwidth' && node.width?.css === '50%'),
+  },
+  {
+    label: '.35\\linewidth 可转换为 35%',
+    passed: minipageNodes.value.some((node) => node.width?.raw === '.35\\linewidth' && node.width?.css === '35%'),
+  },
+  {
+    label: 'minipage 可嵌套 minipage',
+    passed: minipageNodes.value.some(
+      (node) => node.optionArgs?.[0] === 't' && node.children?.some((child) => child.type === 'minipage'),
+    ),
+  },
+  {
+    label: 'enumerate 的 item 中可嵌套 minipage',
+    passed: enumerateNodes.value.some((node) =>
+      node.items?.some((item) => Array.isArray(item) && item.some((child) => child.type === 'minipage')),
+    ),
+  },
+  {
+    label: '相邻 minipage 中间的纯空白不会强制换行',
+    passed: !hasVisibleWhitespaceBetweenAdjacentMinipages.value,
+  },
+  {
+    label: '序列化保留 minipage 环境',
+    passed: serializedLatex.value.includes('\\begin{minipage}{48%}') &&
+      serializedLatex.value.includes('\\begin{minipage}[t]{90%}'),
+  },
+])
 </script>
 
 <template>
   <main class="test-nesting">
     <header class="test-nesting__header">
       <h1>嵌套结构测试</h1>
-      <p>验证 Enumerate 和 Choices 的嵌套支持及向后兼容性</p>
+      <p>验证 Enumerate、Choices 和 Minipage 的嵌套支持及向后兼容性</p>
     </header>
 
     <section class="test-nesting__content">
       <LatexRenderer v-model="testNesting" :theme="{ color: '#1f5c8f', textColor: '#000' }" />
+    </section>
+
+    <section class="test-nesting__assertions">
+      <h2>Minipage Assertions</h2>
+      <ul>
+        <li
+          v-for="assertion in minipageAssertions"
+          :key="assertion.label"
+          :class="{ 'is-passed': assertion.passed, 'is-failed': !assertion.passed }"
+        >
+          <span>{{ assertion.passed ? 'PASS' : 'FAIL' }}</span>
+          {{ assertion.label }}
+        </li>
+      </ul>
     </section>
 
     <section class="test-nesting__source">
@@ -208,6 +354,55 @@ $$
   border: 1px solid rgba(17, 29, 40, 0.08);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.95);
+}
+
+.test-nesting__assertions {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(17, 29, 40, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.test-nesting__assertions h2 {
+  color: #162330;
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.test-nesting__assertions ul {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.test-nesting__assertions li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: center;
+  color: #2e3a44;
+  line-height: 1.5;
+}
+
+.test-nesting__assertions span {
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.test-nesting__assertions .is-passed span {
+  background: #d7f2e2;
+  color: #17633a;
+}
+
+.test-nesting__assertions .is-failed span {
+  background: #ffe0df;
+  color: #9d241f;
 }
 
 .test-nesting__source h2 {

@@ -8,6 +8,37 @@ function skipWhitespace(input = '', from = 0) {
   return cursor
 }
 
+export function readRequiredBraceArgument(input = '', from = 0) {
+  const start = skipWhitespace(input, from)
+
+  if (input[start] !== '{') {
+    return null
+  }
+
+  let depth = 0
+
+  for (let cursor = start; cursor < input.length; cursor++) {
+    if (input[cursor] === '{') {
+      depth++
+      continue
+    }
+
+    if (input[cursor] === '}') {
+      depth--
+
+      if (depth === 0) {
+        return {
+          start,
+          end: cursor + 1,
+          content: input.slice(start + 1, cursor),
+        }
+      }
+    }
+  }
+
+  return null
+}
+
 export function readOptionalBracketArgument(input = '', from = 0) {
   const start = skipWhitespace(input, from)
 
