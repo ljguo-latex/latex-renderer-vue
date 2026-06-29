@@ -13,7 +13,7 @@ This repository now uses a real library build:
 ## What It Supports
 
 - MathJax text rendering
-- `\includegraphics[...]` image blocks with optional in-place editing
+- `\includegraphics[...]` image blocks with optional in-place editing and `\linewidth` / `\textwidth` relative widths
 - `choices` environment rendering
 - `enumerate` environment rendering with label template mapping
 - `\vspace{...}` vertical spacing and `\hspace{...}` inline spacing

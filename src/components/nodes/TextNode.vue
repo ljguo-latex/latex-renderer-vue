@@ -15,9 +15,15 @@ const props = defineProps({
 
 const injectedInlineCommandHandlers = inject(INLINE_COMMAND_HANDLERS_KEY, computed(() => inlineCommandHandlers))
 
+const previewContent = computed(() =>
+  props.node.previewContent === undefined
+    ? normalizeLatexTextForPreview(props.node.content ?? '')
+    : props.node.previewContent,
+)
+
 const inlineNodes = computed(() =>
   parseInlineContent(
-    normalizeLatexTextForPreview(props.node.previewContent ?? props.node.content),
+    previewContent.value,
     injectedInlineCommandHandlers.value,
   ).map((node) => normalizeInlineNode(node, injectedInlineCommandHandlers.value)),
 )

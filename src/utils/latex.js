@@ -266,6 +266,7 @@ function removeLatexComments(content = '') {
 
 function normalizeLatexTextSegment(content = '') {
   return content
+    .replace(/\\([%&#_$])/g, '$1')
     .replace(/\\hfill\b/g, '')
     .replace(/\\centering\b/g, '')
     .replace(/\\\\(?:\[[^\]]*\])?/g, '\n')

@@ -63,15 +63,27 @@ let placementFrame = null
 let resizeObserver = null
 
 const widthFromOptions = computed(() => parseLengthToPx(props.options?.width))
+const parsedWidthFromOptions = computed(() => parseLatexLength(props.options?.width))
 const relativeWidthFromOptions = computed(() => {
-  const width = parseLatexLength(props.options?.width)
+  const width = parsedWidthFromOptions.value
 
   return width.kind === 'relative' || width.kind === 'percent' ? width.css : null
+})
+const relativeWidthLabel = computed(() => {
+  const width = parsedWidthFromOptions.value
+
+  if (width.kind === 'relative' || width.kind === 'percent') {
+    return width.css
+  }
+
+  return ''
 })
 
 const fallbackWidthPx = computed(() => widthFromOptions.value || naturalWidth.value || 220)
 
-const widthLabel = computed(() => `${trimNumber(pxToCm(liveWidthPx.value))} cm`)
+const widthLabel = computed(() =>
+  relativeWidthLabel.value && !isSliderActive.value ? relativeWidthLabel.value : `${trimNumber(pxToCm(liveWidthPx.value))} cm`,
+)
 const widthSliderValue = computed(() => Number(pxToCm(liveWidthPx.value).toFixed(2)))
 const widthSliderMin = computed(() => MIN_WIDTH_CM)
 const widthSliderMax = computed(() => MAX_WIDTH_CM)
@@ -116,6 +128,18 @@ function syncWidthFromProps() {
   liveWidthPx.value = Math.max(MIN_WIDTH_PX, clampImageWidthPx(fallbackWidthPx.value))
 }
 
+function syncRenderedWidthFromFrame() {
+  if (!relativeWidthFromOptions.value || isSliderActive.value || !frame.value) {
+    return
+  }
+
+  const renderedWidth = frame.value.getBoundingClientRect().width
+
+  if (renderedWidth > 0) {
+    liveWidthPx.value = clampImageWidthPx(renderedWidth)
+  }
+}
+
 watch(fallbackWidthPx, syncWidthFromProps, { immediate: true })
 watch(
   () => props.src,
@@ -129,6 +153,7 @@ function onImageLoad(event) {
   naturalHeight.value = event.target.naturalHeight
   hasLoadError.value = false
   syncWidthFromProps()
+  nextTick(syncRenderedWidthFromFrame)
   scheduleToolbarPlacementUpdate()
 }
 
@@ -210,6 +235,7 @@ function openToolbar() {
     return
   }
 
+  syncRenderedWidthFromFrame()
   isToolbarOpen.value = true
   scheduleToolbarPlacementUpdate()
 }
@@ -288,7 +314,10 @@ onMounted(() => {
   window.addEventListener('scroll', scheduleToolbarPlacementUpdate, true)
 
   if (typeof ResizeObserver !== 'undefined') {
-    resizeObserver = new ResizeObserver(scheduleToolbarPlacementUpdate)
+    resizeObserver = new ResizeObserver(() => {
+      syncRenderedWidthFromFrame()
+      scheduleToolbarPlacementUpdate()
+    })
 
     if (root.value) {
       resizeObserver.observe(root.value)
@@ -296,6 +325,10 @@ onMounted(() => {
 
     if (toolbar.value) {
       resizeObserver.observe(toolbar.value)
+    }
+
+    if (frame.value) {
+      resizeObserver.observe(frame.value)
     }
   }
 })

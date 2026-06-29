@@ -2,6 +2,11 @@
 import { computed, ref } from 'vue'
 import { LatexRenderer, defaultProcessors, inlineCommandHandlers, parseLatex, serializeLatex } from '../src/index.js'
 import { parseInlineContent } from '../src/latex/inline/core.js'
+import { parseLatexLength } from '../src/latex/length.js'
+import testImageSrc from './assets/image.png'
+
+const CASE_NUMERALS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三', '十四']
+const TEST_CASE_HEADING_PATTERN = /^测试用例\s+[^：:\n]+[：:]\s*(.*)$/gm
 
 const testNesting = ref(String.raw`测试：Enumerate 和 Choices 嵌套支持
 
@@ -90,16 +95,19 @@ aaaa
 \begin{center}
     \begin{minipage}{.49\linewidth}
         \centering
-        \includegraphics[width=\linewidth]{fantastic_idea_latex_6a3ebad3e056b.jpg}\\
+        \includegraphics[width=\linewidth]{image.png}\\
         图1
     \end{minipage}%
     \hfill
     \begin{minipage}{.49\linewidth}
         \centering
-        \includegraphics[width=\linewidth]{fantastic_idea_latex_6a3ebad3e056b.jpg}\\
+        \includegraphics[width=\linewidth]{image.png}\\
         图2
     \end{minipage}
 \end{center}
+
+测试用例 0.8：includegraphics 支持 keepaspectratio 和 linewidth 宽度
+\includegraphics[keepaspectratio,width=0.432\linewidth]{image.png}
 
 测试用例 1：Enumerate 嵌套 Choices
 \begin{enumerate}
@@ -247,6 +255,53 @@ $$
 \color{purple}紫色声明文本。`)
 
 const parsedNodes = computed(() => parseLatex(testNesting.value, defaultProcessors))
+const testCaseSections = computed(() => splitTestCases(testNesting.value))
+
+function imageSrcResolver({ src }) {
+  return src === 'image.png' ? testImageSrc : src
+}
+
+function formatCaseTitle(index, title) {
+  return `用例${CASE_NUMERALS[index] || index + 1}，${title || '基础内容'}`
+}
+
+function splitTestCases(latex = '') {
+  const sections = []
+  const pattern = new RegExp(TEST_CASE_HEADING_PATTERN)
+  let cursor = 0
+  let nextTitle = '基础推导与行内命令'
+  let match = pattern.exec(latex)
+
+  while (match) {
+    const content = latex.slice(cursor, match.index).trim()
+
+    if (content) {
+      sections.push({
+        title: nextTitle,
+        latex: content,
+      })
+    }
+
+    nextTitle = match[1]?.trim() || match[0].trim()
+    cursor = pattern.lastIndex
+    match = pattern.exec(latex)
+  }
+
+  const trailingContent = latex.slice(cursor).trim()
+
+  if (trailingContent) {
+    sections.push({
+      title: nextTitle,
+      latex: trailingContent,
+    })
+  }
+
+  return sections.map((section, index) => ({
+    id: `case_${index + 1}`,
+    title: formatCaseTitle(index, section.title),
+    latex: section.latex,
+  }))
+}
 
 function collectNodes(nodes = [], type) {
   return nodes.flatMap((node) => {
@@ -274,6 +329,7 @@ function collectNodes(nodes = [], type) {
 
 const minipageNodes = computed(() => collectNodes(parsedNodes.value, 'minipage'))
 const centerNodes = computed(() => collectNodes(parsedNodes.value, 'center'))
+const imageNodes = computed(() => collectNodes(parsedNodes.value, 'image'))
 const tabularNodes = computed(() => collectNodes(parsedNodes.value, 'tabular'))
 const enumerateNodes = computed(() => collectNodes(parsedNodes.value, 'enumerate'))
 const textNodes = computed(() => collectNodes(parsedNodes.value, 'text'))
@@ -371,9 +427,46 @@ const tabularAssertions = computed(() => [
     ),
   },
   {
+    label: '表格文本中的 \\% 渲染为 %',
+    passed: tabularNodes.value.some((node) =>
+      node.rows?.some((row) =>
+        row.cells?.some((cell) =>
+          cell.children?.some(
+            (child) =>
+              child.type === 'text' &&
+              child.content?.includes('\\%') &&
+              child.previewContent?.includes('%') &&
+              !child.previewContent?.includes('\\%'),
+          ),
+        ),
+      ),
+    ),
+  },
+  {
     label: 'minipage 内 \\centering 可转为居中样式',
     passed: minipageNodes.value.filter((node) => node.width?.raw === '.49\\linewidth' && node.alignment === 'center')
       .length >= 2,
+  },
+])
+
+const imageAssertions = computed(() => [
+  {
+    label: 'includegraphics 可解析 keepaspectratio 选项',
+    passed: imageNodes.value.some((node) => node.options?.keepaspectratio === true),
+  },
+  {
+    label: 'includegraphics 的 0.432\\linewidth 可转换为 43.2%',
+    passed: imageNodes.value.some((node) => {
+      const width = parseLatexLength(node.options?.width)
+
+      return width.raw === '0.432\\linewidth' && width.css === '43.2%'
+    }),
+  },
+  {
+    label: '序列化保留 keepaspectratio,width=0.432\\linewidth',
+    passed: serializedLatex.value.includes(
+      '\\includegraphics[keepaspectratio,width=0.432\\linewidth]{image.png}',
+    ),
   },
 ])
 
@@ -461,11 +554,30 @@ const colorAssertions = computed(() => [
   <main class="test-nesting">
     <header class="test-nesting__header">
       <h1>嵌套结构测试</h1>
-      <p>验证 Enumerate、Choices 和 Minipage 的嵌套支持及向后兼容性</p>
+      <p>按用例对照查看 LaTeX 代码与渲染预览，同时保留回归断言。</p>
     </header>
 
-    <section class="test-nesting__content">
-      <LatexRenderer v-model="testNesting" :theme="{ color: '#1f5c8f', textColor: '#000' }" />
+    <section class="test-nesting__cases">
+      <article v-for="testCase in testCaseSections" :key="testCase.id" class="test-case">
+        <h2>{{ testCase.title }}</h2>
+
+        <section class="test-case__panel">
+          <h3>代码</h3>
+          <pre>{{ testCase.latex }}</pre>
+        </section>
+
+        <section class="test-case__panel">
+          <h3>预览</h3>
+          <div class="test-case__preview">
+            <LatexRenderer
+              :model-value="testCase.latex"
+              :theme="{ color: '#1f5c8f', textColor: '#000' }"
+              :image-src-resolver="imageSrcResolver"
+              :editable-images="true"
+            />
+          </div>
+        </section>
+      </article>
     </section>
 
     <section class="test-nesting__assertions">
@@ -487,6 +599,20 @@ const colorAssertions = computed(() => [
       <ul>
         <li
           v-for="assertion in tabularAssertions"
+          :key="assertion.label"
+          :class="{ 'is-passed': assertion.passed, 'is-failed': !assertion.passed }"
+        >
+          <span>{{ assertion.passed ? 'PASS' : 'FAIL' }}</span>
+          {{ assertion.label }}
+        </li>
+      </ul>
+    </section>
+
+    <section class="test-nesting__assertions">
+      <h2>Image Assertions</h2>
+      <ul>
+        <li
+          v-for="assertion in imageAssertions"
           :key="assertion.label"
           :class="{ 'is-passed': assertion.passed, 'is-failed': !assertion.passed }"
         >
@@ -523,11 +649,6 @@ const colorAssertions = computed(() => [
         </li>
       </ul>
     </section>
-
-    <section class="test-nesting__source">
-      <h2>LaTeX Source</h2>
-      <pre>{{ testNesting }}</pre>
-    </section>
   </main>
 </template>
 
@@ -561,21 +682,64 @@ const colorAssertions = computed(() => [
   margin: 0;
 }
 
-.test-nesting__content {
-  padding: 2rem;
+.test-nesting__cases {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.test-case {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.25rem;
   border: 1px solid rgba(17, 29, 40, 0.08);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 4px 12px rgba(18, 27, 34, 0.06);
+  overflow: visible;
 }
 
-.test-nesting__source {
+.test-case h2 {
+  color: #162330;
+  font-size: 1.18rem;
+  margin: 0;
+}
+
+.test-case__panel {
   display: grid;
-  gap: 0.8rem;
-  padding: 1.5rem;
+  gap: 0.65rem;
+  min-width: 0;
+  overflow: visible;
+}
+
+.test-case__panel h3 {
+  color: #526170;
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.test-case__panel pre {
+  min-height: 12rem;
+  max-height: 28rem;
+  margin: 0;
+  padding: 1rem;
+  overflow: auto;
+  border-radius: 8px;
+  background: #17212b;
+  color: #f5f1e8;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.test-case__preview {
+  min-height: 12rem;
+  padding: 4.5rem 1rem 1rem;
+  overflow: visible;
   border: 1px solid rgba(17, 29, 40, 0.08);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  background: #ffffff;
 }
 
 .test-nesting__assertions {
@@ -627,21 +791,4 @@ const colorAssertions = computed(() => [
   color: #9d241f;
 }
 
-.test-nesting__source h2 {
-  color: #162330;
-  font-size: 1.2rem;
-  margin: 0;
-}
-
-.test-nesting__source pre {
-  margin: 0;
-  padding: 1rem;
-  border-radius: 8px;
-  background: #17212b;
-  color: #f5f1e8;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-size: 0.9rem;
-  line-height: 1.6;
-}
 </style>
