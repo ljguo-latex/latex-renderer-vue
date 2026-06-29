@@ -1,5 +1,5 @@
 import CenterNode from '../../components/nodes/CenterNode.vue'
-import { parseLatex, serializeLatex } from '../core'
+import { parseLatex, prefixNodeIds, serializeLatex } from '../core'
 import { findEnvironmentBlock } from '../environment'
 
 const ALIGNMENT_ENVIRONMENTS = ['center', 'flushleft', 'flushright']
@@ -39,7 +39,7 @@ export const centerProcessor = {
       id,
       type: 'center',
       environmentName: result.environmentName || 'center',
-      children: parseLatex((result.body || '').trim(), processors),
+      children: prefixNodeIds(parseLatex((result.body || '').trim(), processors), id),
       original: result.original,
     }
   },

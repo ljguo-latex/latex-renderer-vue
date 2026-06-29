@@ -8,7 +8,13 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  editable: {
+    type: Boolean,
+    default: false,
+  },
 })
+
+const emit = defineEmits(['update-node'])
 
 const minipageStyle = computed(() => ({
   width: props.node.width?.css || 'auto',
@@ -24,7 +30,7 @@ const minipageClass = computed(() => ({
 
 <template>
   <span class="minipage-node" :class="minipageClass" :style="minipageStyle">
-    <ContentNode :nodes="node.children || []" />
+    <ContentNode :nodes="node.children || []" :editable="editable" @update-node="emit('update-node', $event)" />
   </span>
 </template>
 

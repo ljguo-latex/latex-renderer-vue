@@ -55,6 +55,7 @@ const isSliderActive = ref(false)
 const isToolbarOpen = ref(false)
 const toolbarPlacement = ref('top')
 const root = ref(null)
+const frame = ref(null)
 const toolbar = ref(null)
 
 let widthCommitTimer = null
@@ -100,7 +101,7 @@ const figureClass = computed(() => {
   return classes
 })
 const frameStyle = computed(() => ({
-  width: relativeWidthFromOptions.value || `${liveWidthPx.value}px`,
+  width: relativeWidthFromOptions.value && !isSliderActive.value ? relativeWidthFromOptions.value : `${liveWidthPx.value}px`,
 }))
 
 const toolbarPlacementClass = computed(() =>
@@ -171,6 +172,10 @@ function updateWidthFromSlider(event) {
 function startSliderInteraction() {
   if (!props.editable) {
     return
+  }
+
+  if (relativeWidthFromOptions.value && frame.value) {
+    liveWidthPx.value = clampImageWidthPx(frame.value.getBoundingClientRect().width || liveWidthPx.value)
   }
 
   isSliderActive.value = true
@@ -363,7 +368,7 @@ onBeforeUnmount(() => {
       </label>
     </div>
 
-    <div class="resizable-image__frame" :style="frameStyle" @click="openToolbar">
+    <div ref="frame" class="resizable-image__frame" :style="frameStyle" @click="openToolbar">
       <img
         v-if="!hasLoadError"
         class="resizable-image__media"

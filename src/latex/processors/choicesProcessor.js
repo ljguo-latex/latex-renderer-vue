@@ -1,5 +1,5 @@
 import ChoicesNode from '../../components/nodes/ChoicesNode.vue'
-import { serializeLatex } from '../core'
+import { prefixNodeIds, serializeLatex } from '../core'
 import { findEnvironmentBlock } from '../environment'
 import { parseItemContent } from '../itemParser'
 
@@ -61,11 +61,11 @@ function splitItems(body = '') {
   return items
 }
 
-function parseChoiceItems(body = '', processors = []) {
+function parseChoiceItems(body = '', processors = [], id = 'choices') {
   const rawItems = splitItems(body)
 
   // 递归解析每个项目的内容
-  return rawItems.map(itemContent => parseItemContent(itemContent, processors))
+  return rawItems.map((itemContent, index) => prefixNodeIds(parseItemContent(itemContent, processors), `${id}_item_${index + 1}`))
 }
 
 export const choicesProcessor = {
@@ -81,7 +81,7 @@ export const choicesProcessor = {
     return {
       id,
       type: 'choices',
-      items: parseChoiceItems(result.body || '', processors),
+      items: parseChoiceItems(result.body || '', processors, id),
       original: result.original,
     }
   },

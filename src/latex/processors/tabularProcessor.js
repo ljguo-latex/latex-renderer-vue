@@ -1,5 +1,5 @@
 import TabularNode from '../../components/nodes/TabularNode.vue'
-import { parseLatex } from '../core'
+import { parseLatex, prefixNodeIds, serializeLatex } from '../core'
 import { readOptionalBracketArgument, readRequiredBraceArgument } from '../environment'
 
 const BEGIN_TOKEN = '\\begin{tabular}'
@@ -292,7 +292,7 @@ function splitTopLevelCells(rowContent = '') {
   return cells
 }
 
-function parseRows(body = '', processors = []) {
+function parseRows(body = '', processors = [], id = 'tabular') {
   const rows = []
   let pendingTopBorder = false
 
@@ -311,7 +311,7 @@ function parseRows(body = '', processors = []) {
     const cells = splitTopLevelCells(token.content).map((cellContent, cellIndex) => ({
       id: `cell_${rowIndex + 1}_${cellIndex + 1}`,
       content: cellContent,
-      children: parseLatex(cellContent, processors),
+      children: prefixNodeIds(parseLatex(cellContent, processors), `${id}_cell_${rowIndex + 1}_${cellIndex + 1}`),
     }))
 
     rows.push({
@@ -352,17 +352,21 @@ export const tabularProcessor = {
       optionString: result.optionString || '',
       columnSpec: result.columnSpec || '',
       columns: parseColumns(result.columnSpec || ''),
-      rows: parseRows(result.body || '', processors),
+      rows: parseRows(result.body || '', processors, id),
       original: result.original,
     }
   },
-  serialize(node) {
+  serialize(node, { processors = [] } = {}) {
     if (node.original) {
       return node.original
     }
 
     const rows = (node.rows || [])
-      .map((row) => row.cells?.map((cell) => cell.content || '').join(' & ') || '')
+      .map((row) =>
+        row.cells
+          ?.map((cell) => (Array.isArray(cell.children) ? serializeLatex(cell.children, processors) : cell.content || ''))
+          .join(' & ') || '',
+      )
       .join(' \\\\\n')
 
     return `${serializeOpening(node)}\n${rows}\n${END_TOKEN}`

@@ -7,6 +7,10 @@ const props = defineProps({
     type: Array,
     required: true,
   },
+  editable: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const processors = inject('latex-processors', [])
@@ -16,6 +20,16 @@ const processorRegistry = computed(() => {
   // 使用 createProcessorRegistry 来包含 textProcessor
   return createProcessorRegistry(procs)
 })
+
+const emit = defineEmits(['update-node'])
+
+function isNodeEditable(node) {
+  const processor = processorRegistry.value.get(node.type)
+  return processor?.isEditable?.({
+    editableImages: props.editable,
+    node,
+  }) || false
+}
 </script>
 
 <template>
@@ -25,6 +39,8 @@ const processorRegistry = computed(() => {
       :key="node.id"
       :is="processorRegistry.get(node.type)?.component"
       :node="node"
+      :editable="isNodeEditable(node) || editable"
+      @update-node="emit('update-node', $event)"
     />
   </span>
 </template>

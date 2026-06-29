@@ -6,7 +6,13 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  editable: {
+    type: Boolean,
+    default: false,
+  },
 })
+
+const emit = defineEmits(['update-node'])
 
 function cellStyle(column, row, cellIndex) {
   return {
@@ -30,7 +36,7 @@ function cellStyle(column, row, cellIndex) {
             class="tabular-node__cell"
             :style="cellStyle(node.columns?.[cellIndex], row, cellIndex)"
           >
-            <ContentNode :nodes="cell.children || []" />
+            <ContentNode :nodes="cell.children || []" :editable="editable" @update-node="emit('update-node', $event)" />
           </td>
         </tr>
       </tbody>

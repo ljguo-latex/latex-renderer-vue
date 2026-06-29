@@ -1,7 +1,7 @@
 <script setup>
 import { computed, provide } from 'vue'
 
-import { parseLatex, replaceNode, serializeLatex } from '../latex/core'
+import { parseLatex, replaceNodeDeep, serializeLatex } from '../latex/core'
 import { IMAGE_SRC_RESOLVER_KEY } from '../latex/imageContext'
 import { inlineCommandHandlers as defaultInlineCommandHandlers } from '../latex/inline/commands'
 import { INLINE_COMMAND_HANDLERS_KEY } from '../latex/inline/context'
@@ -48,16 +48,8 @@ provide(INLINE_COMMAND_HANDLERS_KEY, computed(() => props.inlineCommands))
 provide(IMAGE_SRC_RESOLVER_KEY, computed(() => props.imageSrcResolver))
 provide('latex-processors', activeProcessors)
 
-function isNodeEditable(node) {
-  const processor = processorRegistry.value.get(node.type)
-  return processor?.isEditable?.({
-    editableImages: props.editableImages,
-    node,
-  }) || false
-}
-
 function handleNodeUpdate(nextNode) {
-  const nextNodes = replaceNode(nodes.value, nextNode)
+  const nextNodes = replaceNodeDeep(nodes.value, nextNode)
   emit('update:modelValue', serializeLatex(nextNodes, activeProcessors.value))
 }
 </script>
@@ -68,7 +60,7 @@ function handleNodeUpdate(nextNode) {
       <component
         :is="processorRegistry.get(node.type)?.component"
         :node="node"
-        :editable="isNodeEditable(node)"
+        :editable="props.editableImages"
         @update-node="handleNodeUpdate"
       />
     </template>

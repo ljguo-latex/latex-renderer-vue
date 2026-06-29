@@ -11,9 +11,14 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  editable: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const processors = inject('latex-processors', [])
+const emit = defineEmits(['update-node'])
 
 const container = ref(null)
 const measureRoot = ref(null)
@@ -162,6 +167,8 @@ onBeforeUnmount(() => {
           v-else
           class="choices-node__content"
           :nodes="item"
+          :editable="editable"
+          @update-node="emit('update-node', $event)"
         />
       </li>
     </ol>

@@ -1,5 +1,5 @@
 import EnumerateNode from '../../components/nodes/EnumerateNode.vue'
-import { serializeLatex } from '../core'
+import { prefixNodeIds, serializeLatex } from '../core'
 import { findEnvironmentBlock } from '../environment'
 import { parseItemContent } from '../itemParser'
 
@@ -61,11 +61,11 @@ function splitItems(body = '') {
   return items
 }
 
-function parseItems(body = '', processors = []) {
+function parseItems(body = '', processors = [], id = 'enumerate') {
   const rawItems = splitItems(body)
 
   // 递归解析每个项目的内容
-  return rawItems.map(itemContent => parseItemContent(itemContent, processors))
+  return rawItems.map((itemContent, index) => prefixNodeIds(parseItemContent(itemContent, processors), `${id}_item_${index + 1}`))
 }
 
 function unwrapBraces(value = '') {
@@ -103,7 +103,7 @@ export const enumerateProcessor = {
     return {
       id,
       type: 'enumerate',
-      items: parseItems(result.body || '', processors),
+      items: parseItems(result.body || '', processors, id),
       options: parseOptions(result.optionString || ''),
       original: result.original,
     }

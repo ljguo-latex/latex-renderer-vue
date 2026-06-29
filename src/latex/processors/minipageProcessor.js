@@ -1,5 +1,5 @@
 import MinipageNode from '../../components/nodes/MinipageNode.vue'
-import { parseLatex, serializeLatex } from '../core'
+import { parseLatex, prefixNodeIds, serializeLatex } from '../core'
 import { readOptionalBracketArgument, readRequiredBraceArgument } from '../environment'
 import { parseLatexLength } from '../length'
 
@@ -136,7 +136,7 @@ export const minipageProcessor = {
       widthString: result.widthString || '',
       width: parseLatexLength(result.widthString || ''),
       alignment: getMinipageAlignment(result.body || ''),
-      children: parseLatex((result.body || '').trim(), processors),
+      children: prefixNodeIds(parseLatex((result.body || '').trim(), processors), id),
       original: result.original,
     }
   },

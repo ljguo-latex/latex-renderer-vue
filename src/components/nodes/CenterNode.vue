@@ -8,7 +8,13 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  editable: {
+    type: Boolean,
+    default: false,
+  },
 })
+
+const emit = defineEmits(['update-node'])
 
 const textAlign = computed(() => {
   if (props.node.environmentName === 'flushleft') {
@@ -25,7 +31,7 @@ const textAlign = computed(() => {
 
 <template>
   <div class="center-node" :style="{ textAlign }">
-    <ContentNode :nodes="node.children || []" />
+    <ContentNode :nodes="node.children || []" :editable="editable" @update-node="emit('update-node', $event)" />
   </div>
 </template>
 

@@ -9,9 +9,14 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  editable: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const processors = inject('latex-processors', [])
+const emit = defineEmits(['update-node'])
 
 function createTextNode(content, index) {
   return {
@@ -56,6 +61,8 @@ function getSimpleContent(item) {
         v-else
         class="enumerate-node__content"
         :nodes="item"
+        :editable="editable"
+        @update-node="emit('update-node', $event)"
       />
     </li>
   </ol>
