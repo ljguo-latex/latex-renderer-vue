@@ -8,9 +8,10 @@ function createMathJaxConfig(resolve) {
       scale: 0.92,
       minScale: 0.5,
       mathmlSpacing: false,
+      mtextInheritFont: true,
     },
     loader: {
-      load: ['[tex]/mhchem', '[tex]/extpfeil', '[tex]/enclose', '[tex]/color'],
+      load: ['[tex]/mhchem', '[tex]/extpfeil', '[tex]/enclose', '[tex]/color', '[tex]/html'],
     },
     tex: {
       inlineMath: [
@@ -21,12 +22,13 @@ function createMathJaxConfig(resolve) {
         ['$$', '$$'],
         ['\\[', '\\]'],
       ],
-      packages: { '[+]': ['mhchem', 'extpfeil', 'enclose', 'color'] },
+      packages: { '[+]': ['mhchem', 'extpfeil', 'enclose', 'color', 'html'] },
       macros: {
         overarc: ['\\overset{\\Large\\frown}{#1}', 1],
-        circled: ['\\enclose{circle}{#1}', 1],
-        paren: ['\\left(\\qquad\\right)', 0],
-        blank: ['\\underline{\\qquad\\qquad}', 0],
+        circled: ['\\class{math-circled}{\\enclose{circle}{#1}}', 1],
+        paren: ['\\style{color: var(--latex-renderer-theme-color); font-size: 1.15em;}{\\text{\\textbf{(}}\\qquad\\text{\\textbf{)}}}', 0],
+        blank: ['\\class{math-blank-rule}{\\rule[-0.15em]{4.5em}{2px}}', 0],
+        frac: ['{\\displaystyle{#1\\over#2}}', 2],
       },
       processEscapes: true,
       processEnvironments: true,

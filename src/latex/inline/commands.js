@@ -12,20 +12,20 @@ export const inlineCommandHandlers = {
     component: BlankCommand,
     minArgs: 0,
     maxArgs: 1,
-    toMath: () => '\\underline{\\qquad\\qquad}',
+    toMath: () => '\\class{math-blank-rule}{\\rule[-0.15em]{4.5em}{2px}}',
   },
   paren: {
     name: 'paren',
     component: ParenCommand,
     minArgs: 0,
     maxArgs: 1,
-    toMath: () => '\\left(\\qquad\\right)',
+    toMath: () => '\\style{color: var(--latex-renderer-theme-color); font-size: 1.15em;}{\\text{\\textbf{(}}\\qquad\\text{\\textbf{)}}}',
   },
   circled: {
     name: 'circled',
     component: CircledCommand,
     args: 1,
-    toMath: (node) => `\\enclose{circle}{${node.param ?? ''}}`,
+    toMath: (node) => `\\class{math-circled}{\\enclose{circle}{${node.param ?? ''}}}`,
   },
   hspace: {
     name: 'hspace',

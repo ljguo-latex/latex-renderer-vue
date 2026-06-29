@@ -52,6 +52,21 @@ function cellStyle(column, row, cellIndex) {
   vertical-align: middle;
 }
 
+/* 优雅的滚动条 */
+.tabular-node::-webkit-scrollbar {
+  height: 6px;
+}
+.tabular-node::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tabular-node::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--latex-renderer-text-color) 15%, transparent);
+  border-radius: 3px;
+}
+.tabular-node::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--latex-renderer-text-color) 30%, transparent);
+}
+
 .tabular-node__table {
   border-collapse: collapse;
   table-layout: auto;
@@ -59,9 +74,19 @@ function cellStyle(column, row, cellIndex) {
   line-height: 1.8;
 }
 
+/* 表格行悬浮交互效果 */
+.tabular-node__table tr {
+  transition: background-color 0.2s ease;
+}
+.tabular-node__table tr:hover {
+  background-color: color-mix(in srgb, var(--latex-renderer-theme-color) 6%, transparent);
+}
+
 .tabular-node__cell {
-  border: 0 solid currentcolor;
-  padding: 0.12rem 0.55rem;
+  /* 柔和的边框颜色 */
+  border: 0 solid color-mix(in srgb, var(--latex-renderer-text-color) 35%, transparent);
+  /* 增加内边距让表格更舒展 */
+  padding: 0.35rem 0.75rem;
   white-space: nowrap;
   vertical-align: middle;
 }

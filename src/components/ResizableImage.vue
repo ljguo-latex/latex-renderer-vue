@@ -1,4 +1,4 @@
-demo<script setup>
+<script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import {
@@ -376,9 +376,36 @@ onBeforeUnmount(() => {
           class="resizable-image__alignment-button"
           :class="{ 'resizable-image__alignment-button--active': alignment === option.value }"
           type="button"
+          :title="option.label"
           @click="updateAlignment(option.value)"
         >
-          {{ option.label }}
+          <!-- 无对齐/默认 -->
+          <svg v-if="option.value === 'default'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          <!-- 左对齐 -->
+          <svg v-else-if="option.value === 'left'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="17" y1="10" x2="3" y2="10"></line>
+            <line x1="21" y1="6" x2="3" y2="6"></line>
+            <line x1="14" y1="14" x2="3" y2="14"></line>
+            <line x1="18" y1="18" x2="3" y2="18"></line>
+          </svg>
+          <!-- 居中对齐 -->
+          <svg v-else-if="option.value === 'center'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="10" x2="6" y2="10"></line>
+            <line x1="21" y1="6" x2="3" y2="6"></line>
+            <line x1="17" y1="14" x2="7" y2="14"></line>
+            <line x1="19" y1="18" x2="5" y2="18"></line>
+          </svg>
+          <!-- 右对齐 -->
+          <svg v-else-if="option.value === 'right'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="21" y1="10" x2="7" y2="10"></line>
+            <line x1="21" y1="6" x2="3" y2="6"></line>
+            <line x1="21" y1="14" x2="10" y2="14"></line>
+            <line x1="21" y1="18" x2="6" y2="18"></line>
+          </svg>
         </button>
       </div>
 
@@ -431,6 +458,20 @@ onBeforeUnmount(() => {
 
 .resizable-image--fluid {
   width: 100%;
+  display: flex;
+}
+
+.resizable-image--fluid.resizable-image--default,
+.resizable-image--fluid.resizable-image--left {
+  justify-content: flex-start;
+}
+
+.resizable-image--fluid.resizable-image--center {
+  justify-content: center;
+}
+
+.resizable-image--fluid.resizable-image--right {
+  justify-content: flex-end;
 }
 
 .resizable-image--default,
@@ -456,17 +497,21 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 0.8rem;
   width: min(520px, calc(100vw - 3rem));
-  padding: 0.5rem 0.65rem;
-  border: 1px solid rgba(18, 33, 48, 0.1);
-  border-radius: 10px;
-  background: rgba(255, 253, 249, 0.96);
-  box-shadow: 0 14px 32px rgba(17, 27, 38, 0.12);
+  padding: 0.4rem 0.6rem;
+  border: 1px solid rgba(18, 33, 48, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  box-shadow:
+    0 12px 30px -10px rgba(18, 27, 34, 0.12),
+    0 1px 3px rgba(18, 27, 34, 0.04);
   opacity: 0;
   transform: translateY(6px);
   pointer-events: none;
   transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
+    opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .resizable-image--toolbar-bottom .resizable-image__toolbar {
@@ -544,7 +589,11 @@ onBeforeUnmount(() => {
 
 .resizable-image__alignment {
   display: flex;
-  gap: 0.3rem;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 2px;
+  border-radius: 8px;
+  border: 1px solid rgba(18, 33, 48, 0.04);
+  gap: 1px;
   flex-shrink: 0;
 }
 
@@ -557,39 +606,128 @@ onBeforeUnmount(() => {
 }
 
 .resizable-image__alignment-button {
-  border: 1px solid rgba(18, 33, 48, 0.12);
-  min-width: 2rem;
+  border: none;
+  width: 2rem;
   height: 2rem;
-  border-radius: 8px;
-  background: rgba(255, 253, 249, 0.92);
-  color: #42515c;
-  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  background: transparent;
+  color: #5d6d7e;
+  padding: 0;
   cursor: pointer;
-  font-size: 0.8rem;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition:
-    border-color 0.2s ease,
-    background-color 0.2s ease,
-    color 0.2s ease;
+    background-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.1s ease;
+}
+
+.resizable-image__alignment-button:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #2c3e50;
+}
+
+.resizable-image__alignment-button:active {
+  transform: scale(0.95);
 }
 
 .resizable-image__alignment-button--active {
-  border-color: var(--latex-renderer-theme-color);
-  background: color-mix(in srgb, var(--latex-renderer-theme-color) 12%, white);
+  background: #ffffff;
+  color: var(--latex-renderer-theme-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.resizable-image__alignment-button--active:hover {
+  background: #ffffff;
   color: var(--latex-renderer-theme-color);
 }
 
 .resizable-image__slider-value {
   min-width: 4.2rem;
-  color: #4c5965;
+  color: #5d6d7e;
   font-size: 0.8rem;
+  font-weight: 500;
   white-space: nowrap;
 }
 
 .resizable-image__slider-input {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   min-width: 0;
-  accent-color: var(--latex-renderer-theme-color);
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Chrome, Safari, Edge, Opera slider styles */
+.resizable-image__slider-input::-webkit-slider-runnable-track {
+  background: rgba(0, 0, 0, 0.06);
+  height: 4px;
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+
+.resizable-image__slider-input:hover::-webkit-slider-runnable-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.resizable-image__slider-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -6px;
+  background-color: #ffffff;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  border: 2.5px solid var(--latex-renderer-theme-color);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  transition:
+    transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    background-color 0.15s;
+}
+
+.resizable-image__slider-input:hover::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+.resizable-image__slider-input:active::-webkit-slider-thumb {
+  transform: scale(1.25);
+  background-color: var(--latex-renderer-theme-color);
+}
+
+/* Firefox slider styles */
+.resizable-image__slider-input::-moz-range-track {
+  background: rgba(0, 0, 0, 0.06);
+  height: 4px;
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+
+.resizable-image__slider-input:hover::-moz-range-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.resizable-image__slider-input::-moz-range-thumb {
+  background-color: #ffffff;
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  border: 2.5px solid var(--latex-renderer-theme-color);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  transition:
+    transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    background-color 0.15s;
+}
+
+.resizable-image__slider-input:hover::-moz-range-thumb {
+  transform: scale(1.15);
+}
+
+.resizable-image__slider-input:active::-moz-range-thumb {
+  transform: scale(1.25);
+  background-color: var(--latex-renderer-theme-color);
 }
 
 @media (max-width: 640px) {
@@ -597,10 +735,12 @@ onBeforeUnmount(() => {
     flex-direction: column;
     align-items: stretch;
     width: min(420px, calc(100vw - 2rem));
+    padding: 0.6rem;
+    gap: 0.6rem;
   }
 
   .resizable-image__alignment {
-    flex-wrap: wrap;
+    justify-content: center;
   }
 }
 

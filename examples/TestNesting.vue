@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { LatexRenderer, defaultProcessors, inlineCommandHandlers, parseLatex, serializeLatex } from '../src/index.js'
 import { parseInlineContent } from '../src/latex/inline/core.js'
 import { parseLatexLength } from '../src/latex/length.js'
@@ -9,6 +9,8 @@ const CASE_NUMERALS = ['一', '二', '三', '四', '五', '六', '七', '八', '
 const TEST_CASE_HEADING_PATTERN = /^测试用例\s+[^：:\n]+[：:]\s*(.*)$/gm
 
 const testNesting = ref(String.raw`测试：Enumerate 和 Choices 嵌套支持
+$q = \paren{}$
+$q = \blank{}$
 
 将已知等式两边分别平方可得:
 \begin{equation*}
@@ -255,7 +257,28 @@ $$
 \color{purple}紫色声明文本。`)
 
 const parsedNodes = computed(() => parseLatex(testNesting.value, defaultProcessors))
-const testCaseSections = computed(() => splitTestCases(testNesting.value))
+
+const testCaseSections = ref([])
+
+watch(
+  testNesting,
+  (newVal) => {
+    const reconstructed = testCaseSections.value
+      .map((s) => (s.header ? `${s.header}\n${s.latex}` : s.latex))
+      .join('\n\n')
+    if (newVal !== reconstructed) {
+      testCaseSections.value = splitTestCases(newVal)
+    }
+  },
+  { immediate: true },
+)
+
+function handleCaseUpdate(index, newLatex) {
+  testCaseSections.value[index].latex = newLatex
+  testNesting.value = testCaseSections.value
+    .map((s) => (s.header ? `${s.header}\n${s.latex}` : s.latex))
+    .join('\n\n')
+}
 
 function imageSrcResolver({ src }) {
   return src === 'image.png' ? testImageSrc : src
@@ -270,18 +293,21 @@ function splitTestCases(latex = '') {
   const pattern = new RegExp(TEST_CASE_HEADING_PATTERN)
   let cursor = 0
   let nextTitle = '基础推导与行内命令'
+  let nextHeader = ''
   let match = pattern.exec(latex)
 
   while (match) {
     const content = latex.slice(cursor, match.index).trim()
 
-    if (content) {
+    if (content || nextHeader) {
       sections.push({
+        header: nextHeader,
         title: nextTitle,
         latex: content,
       })
     }
 
+    nextHeader = match[0]
     nextTitle = match[1]?.trim() || match[0].trim()
     cursor = pattern.lastIndex
     match = pattern.exec(latex)
@@ -289,8 +315,9 @@ function splitTestCases(latex = '') {
 
   const trailingContent = latex.slice(cursor).trim()
 
-  if (trailingContent) {
+  if (trailingContent || nextHeader) {
     sections.push({
+      header: nextHeader,
       title: nextTitle,
       latex: trailingContent,
     })
@@ -299,6 +326,7 @@ function splitTestCases(latex = '') {
   return sections.map((section, index) => ({
     id: `case_${index + 1}`,
     title: formatCaseTitle(index, section.title),
+    header: section.header,
     latex: section.latex,
   }))
 }
@@ -558,7 +586,7 @@ const colorAssertions = computed(() => [
     </header>
 
     <section class="test-nesting__cases">
-      <article v-for="testCase in testCaseSections" :key="testCase.id" class="test-case">
+      <article v-for="(testCase, index) in testCaseSections" :key="testCase.id" class="test-case">
         <h2>{{ testCase.title }}</h2>
 
         <section class="test-case__panel">
@@ -574,6 +602,7 @@ const colorAssertions = computed(() => [
               :theme="{ color: '#1f5c8f', textColor: '#000' }"
               :image-src-resolver="imageSrcResolver"
               :editable-images="true"
+              @update:model-value="handleCaseUpdate(index, $event)"
             />
           </div>
         </section>

@@ -3,15 +3,15 @@ const textCommandStart = '\\text{'
 const inlineMathCommandTransforms = {
   blank: {
     args: 0,
-    toMath: () => '\\underline{\\qquad\\qquad}',
+    toMath: () => '\\class{math-blank-rule}{\\rule[-0.15em]{4.5em}{2px}}',
   },
   paren: {
     args: 0,
-    toMath: () => '\\left(\\qquad\\right)',
+    toMath: () => '\\style{color: var(--latex-renderer-theme-color); font-size: 1.15em;}{\\text{\\textbf{(}}\\qquad\\text{\\textbf{)}}}',
   },
   circled: {
     args: 1,
-    toMath: (args) => `\\enclose{circle}{${args[0] ?? ''}}`,
+    toMath: (args) => `\\class{math-circled}{\\enclose{circle}{${args[0] ?? ''}}}`,
   },
   textcolor: {
     args: 2,

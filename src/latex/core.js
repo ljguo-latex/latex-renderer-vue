@@ -1,4 +1,4 @@
-import { normalizeLatexTextForPreview } from '../utils/latex'
+import { normalizeLatexTextForPreview } from '../utils/latex.js'
 
 export function createTextNode(content, id) {
   return {

@@ -15,8 +15,10 @@ defineProps({
 .blank-command {
   display: inline-block;
   min-width: 4.5em;
-  height: 0.5em;
-  vertical-align: -0.15em;
+  height: 0;
+  vertical-align: baseline;
   border-bottom: 2px solid var(--latex-renderer-theme-color);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 </style>

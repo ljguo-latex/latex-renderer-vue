@@ -18,21 +18,24 @@ defineProps({
 <style scoped>
 .paren-command {
   display: inline-flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 0.12em;
-  vertical-align: -0.08em;
+  vertical-align: middle;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .paren-command__mark {
   color: var(--latex-renderer-theme-color);
-  font-size: 1.1em;
+  font-size: 1.15em;
   line-height: 1;
-  font-weight: 700;
+  font-weight: 600;
+  user-select: none;
 }
 
 .paren-command__space {
   display: inline-block;
   min-width: 2em;
-  transform: translateY(-0.08em);
+  flex-shrink: 0;
 }
 </style>
