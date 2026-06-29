@@ -16,6 +16,8 @@ This repository now uses a real library build:
 - `\includegraphics[...]` image blocks with optional in-place editing
 - `choices` environment rendering
 - `enumerate` environment rendering with label template mapping
+- `\vspace{...}` vertical spacing and `\hspace{...}` inline spacing
+- `\textcolor{...}{...}`, `\color{...}{...}`, and grouped `{\color{...} ...}` inline text color commands
 - Inline business commands such as `\blank` and `\paren`
 - Custom processors and custom inline command handlers
 
@@ -189,6 +191,11 @@ Current built-in commands:
 - `\blank{}`
 - `\paren`
 - `\paren{}`
+- `\circled{...}`
+- `\hspace{...}`
+- `\textcolor{...}{...}`
+- `\color{...}{...}`
+- `{\color{...} ...}`
 
 To extend them in your own project:
 

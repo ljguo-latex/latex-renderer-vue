@@ -10,7 +10,7 @@ function createMathJaxConfig(resolve) {
       mathmlSpacing: false,
     },
     loader: {
-      load: ['[tex]/mhchem', '[tex]/extpfeil', '[tex]/enclose'],
+      load: ['[tex]/mhchem', '[tex]/extpfeil', '[tex]/enclose', '[tex]/color'],
     },
     tex: {
       inlineMath: [
@@ -21,7 +21,7 @@ function createMathJaxConfig(resolve) {
         ['$$', '$$'],
         ['\\[', '\\]'],
       ],
-      packages: { '[+]': ['mhchem', 'extpfeil', 'enclose'] },
+      packages: { '[+]': ['mhchem', 'extpfeil', 'enclose', 'color'] },
       macros: {
         overarc: ['\\overset{\\Large\\frown}{#1}', 1],
         circled: ['\\enclose{circle}{#1}', 1],

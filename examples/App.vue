@@ -25,6 +25,9 @@ const demoImageSrc = `data:image/svg+xml;utf8,${encodeURIComponent(`
 const latex = ref(String.raw`内联命令兼容性验证
 
 非数学模式：\paren{}，\blank{}，\circled{1}\circled{2}\circled{3}
+间距命令：左侧\hspace{1.5em}右侧
+\vspace{0.4em}
+颜色命令：\textcolor{red}{红色文本}，\color{blue}{蓝色文本}
 行内数学模式：$a=\paren{}$，$f(x)=\blank{}+1$，$\circled{4}+\circled{5}$
 另一种行内数学模式：\(x=\paren{}\)
 块级数学模式：

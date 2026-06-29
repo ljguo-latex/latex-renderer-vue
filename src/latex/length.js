@@ -1,4 +1,4 @@
-const CSS_LENGTH_PATTERN = /^(\d+(?:\.\d+)?|\.\d+)\s*(cm|mm|in|pt|px)$/i
+const CSS_LENGTH_PATTERN = /^(\d+(?:\.\d+)?|\.\d+)\s*(cm|mm|in|pt|px|em|ex|rem)$/i
 const CSS_PERCENT_PATTERN = /^(\d+(?:\.\d+)?|\.\d+)\s*%$/
 const RELATIVE_TEXT_WIDTH_PATTERN = /^(?:(\d+(?:\.\d+)?|\.\d+)\s*)?\\(?:textwidth|linewidth|columnwidth)$/
 

@@ -16,13 +16,151 @@ function createMathNode(content, id) {
   }
 }
 
-function createCommandNode(match, id) {
+function findBalancedBraceEnd(input = '', openIndex = 0) {
+  if (input[openIndex] !== '{') {
+    return -1
+  }
+
+  let depth = 0
+
+  for (let index = openIndex; index < input.length; index += 1) {
+    const char = input[index]
+    const previous = input[index - 1]
+
+    if (char === '{' && previous !== '\\') {
+      depth += 1
+      continue
+    }
+
+    if (char === '}' && previous !== '\\') {
+      depth -= 1
+
+      if (depth === 0) {
+        return index
+      }
+    }
+  }
+
+  return -1
+}
+
+function skipWhitespace(input = '', from = 0) {
+  let cursor = from
+
+  while (cursor < input.length && /\s/.test(input[cursor])) {
+    cursor += 1
+  }
+
+  return cursor
+}
+
+function readBraceArgument(input = '', from = 0) {
+  const start = skipWhitespace(input, from)
+
+  if (input[start] !== '{') {
+    return null
+  }
+
+  const end = findBalancedBraceEnd(input, start)
+
+  if (end === -1) {
+    return null
+  }
+
+  return {
+    start,
+    end: end + 1,
+    content: input.slice(start + 1, end),
+  }
+}
+
+function resolveArgumentConfig(handler = {}) {
+  if (Number.isInteger(handler.args)) {
+    return {
+      minArgs: handler.args,
+      maxArgs: handler.args,
+    }
+  }
+
+  return {
+    minArgs: Number.isInteger(handler.minArgs) ? handler.minArgs : 0,
+    maxArgs: Number.isInteger(handler.maxArgs) ? handler.maxArgs : 1,
+  }
+}
+
+function createCommandNode(input, match, id, handlers = {}) {
+  const name = match[1]
+  const handler = handlers[name] || {}
+  const { minArgs, maxArgs } = resolveArgumentConfig(handler)
+  let cursor = match.index + match[0].length
+  const args = []
+
+  for (let argIndex = 0; argIndex < maxArgs; argIndex += 1) {
+    const argument = readBraceArgument(input, cursor)
+
+    if (!argument) {
+      if (
+        handler.declarationGroup &&
+        args.length === 1 &&
+        input[match.index - 1] === '{'
+      ) {
+        const groupStart = match.index - 1
+        const groupEnd = findBalancedBraceEnd(input, groupStart)
+
+        if (groupEnd !== -1 && groupEnd + 1 > cursor) {
+          args.push(input.slice(cursor, groupEnd))
+
+          return {
+            id,
+            type: 'command',
+            name,
+            starred: match[2] === '*',
+            param: args[0] ?? null,
+            args,
+            raw: input.slice(groupStart, groupEnd + 1),
+            start: groupStart,
+            end: groupEnd + 1,
+          }
+        }
+      }
+
+      if (handler.declarationRest && args.length === 1) {
+        args.push(input.slice(cursor))
+
+        return {
+          id,
+          type: 'command',
+          name,
+          starred: match[2] === '*',
+          param: args[0] ?? null,
+          args,
+          raw: input.slice(match.index),
+          start: match.index,
+          end: input.length,
+        }
+      }
+
+      break
+    }
+
+    args.push(argument.content)
+    cursor = argument.end
+  }
+
+  if (args.length < minArgs) {
+    return null
+  }
+
   return {
     id,
     type: 'command',
-    name: match[1],
-    param: match[2] ?? null,
-    raw: match[0],
+    name,
+    starred: match[2] === '*',
+    param: args[0] ?? null,
+    args,
+    raw: input.slice(match.index, cursor),
+    start: match.index,
+    end: cursor,
   }
 }
 
@@ -36,7 +174,7 @@ function buildCommandPattern(commandNames = []) {
   }
 
   const names = [...commandNames].sort((left, right) => right.length - left.length).map(escapeRegExp)
-  return new RegExp(`\\\\(${names.join('|')})(?:\\{([^}]*)\\})?`, 'g')
+  return new RegExp(`\\\\(${names.join('|')})(\\*)?(?![A-Za-z])`, 'g')
 }
 
 function cloneRegExp(pattern) {
@@ -111,20 +249,37 @@ function parseCommandTextSegment(content, commandPattern, handlers, createId) {
   const nodes = []
   const pattern = cloneRegExp(commandPattern)
   let cursor = 0
+  let textStart = 0
 
-  for (const match of content.matchAll(pattern)) {
-    const start = match.index ?? 0
+  while (cursor < content.length) {
+    pattern.lastIndex = cursor
+    const match = pattern.exec(content)
 
-    if (start > cursor) {
-      nodes.push(createTextNode(content.slice(cursor, start), createId('inline_text')))
+    if (!match) {
+      break
     }
 
-    nodes.push(createCommandNode(match, createId('inline_command')))
-    cursor = start + match[0].length
+    const commandNode = createCommandNode(content, match, 'inline_command_pending', handlers)
+
+    if (!commandNode) {
+      cursor = (match.index ?? 0) + match[0].length
+      continue
+    }
+
+    if (commandNode.start > textStart) {
+      nodes.push(createTextNode(content.slice(textStart, commandNode.start), createId('inline_text')))
+    }
+
+    nodes.push({
+      ...commandNode,
+      id: createId('inline_command'),
+    })
+    cursor = commandNode.end
+    textStart = cursor
   }
 
-  if (cursor < content.length) {
-    nodes.push(createTextNode(content.slice(cursor), createId('inline_text')))
+  if (textStart < content.length) {
+    nodes.push(createTextNode(content.slice(textStart), createId('inline_text')))
   }
 
   if (!nodes.length) {
@@ -135,7 +290,12 @@ function parseCommandTextSegment(content, commandPattern, handlers, createId) {
 }
 
 function renderCommandInMath(match, handlers = {}) {
-  const node = createCommandNode(match, 'inline_command_math')
+  const node = createCommandNode(match.input || '', match, 'inline_command_math', handlers)
+
+  if (!node) {
+    return match[0]
+  }
+
   const handler = handlers[node.name]
 
   if (typeof handler?.toMath !== 'function') {
@@ -150,7 +310,34 @@ function serializeMathSegment(content, commandPattern, handlers) {
     return content
   }
 
-  return content.replace(cloneRegExp(commandPattern), (...args) => renderCommandInMath(args, handlers))
+  const pattern = cloneRegExp(commandPattern)
+  let output = ''
+  let searchCursor = 0
+  let outputCursor = 0
+
+  while (searchCursor < content.length) {
+    pattern.lastIndex = searchCursor
+    const match = pattern.exec(content)
+
+    if (!match) {
+      break
+    }
+
+    match.input = content
+    const node = createCommandNode(content, match, 'inline_command_math', handlers)
+
+    if (!node) {
+      searchCursor = (match.index ?? 0) + match[0].length
+      continue
+    }
+
+    output += content.slice(outputCursor, node.start)
+    output += renderCommandInMath(match, handlers)
+    searchCursor = node.end
+    outputCursor = node.end
+  }
+
+  return output + content.slice(outputCursor)
 }
 
 export function parseInlineContent(content = '', handlersOrNames = {}) {

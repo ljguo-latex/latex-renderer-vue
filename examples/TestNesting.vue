@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
-import { LatexRenderer, defaultProcessors, parseLatex, serializeLatex } from '../src/index.js'
+import { LatexRenderer, defaultProcessors, inlineCommandHandlers, parseLatex, serializeLatex } from '../src/index.js'
+import { parseInlineContent } from '../src/latex/inline/core.js'
 
 const testNesting = ref(String.raw`测试：Enumerate 和 Choices 嵌套支持
 
@@ -232,7 +233,18 @@ $$
 第二栏内容 $y=2$。
 \end{minipage}
 \item 后续普通题目保持原样。
-\end{enumerate}`)
+\end{enumerate}
+
+测试用例 8：间距命令
+左侧\hspace{1.5em}右侧，星号左侧\hspace*{2em}星号右侧。
+\vspace{0.4em}
+\vspace*{1em}
+间距后续文本。
+
+测试用例 9：颜色命令
+\textcolor{red}{红色文本}，\color{blue}{蓝色文本}，{\color{green} 绿色分组文本}。
+颜色内嵌命令：\textcolor{#cc3300}{答案是 \paren{}，序号 \circled{7}}。
+\color{purple}紫色声明文本。`)
 
 const parsedNodes = computed(() => parseLatex(testNesting.value, defaultProcessors))
 
@@ -264,7 +276,20 @@ const minipageNodes = computed(() => collectNodes(parsedNodes.value, 'minipage')
 const centerNodes = computed(() => collectNodes(parsedNodes.value, 'center'))
 const tabularNodes = computed(() => collectNodes(parsedNodes.value, 'tabular'))
 const enumerateNodes = computed(() => collectNodes(parsedNodes.value, 'enumerate'))
+const textNodes = computed(() => collectNodes(parsedNodes.value, 'text'))
+const vspaceNodes = computed(() => collectNodes(parsedNodes.value, 'vspace'))
 const serializedLatex = computed(() => serializeLatex(parsedNodes.value, defaultProcessors))
+const inlineCommandNodes = computed(() =>
+  textNodes.value.flatMap((node) =>
+    parseInlineContent(node.previewContent ?? node.content ?? '', inlineCommandHandlers).filter(
+      (inlineNode) => inlineNode.type === 'command',
+    ),
+  ),
+)
+const hspaceNodes = computed(() => inlineCommandNodes.value.filter((node) => node.name === 'hspace'))
+const colorCommandNodes = computed(() =>
+  inlineCommandNodes.value.filter((node) => node.name === 'textcolor' || node.name === 'color'),
+)
 const hasVisibleWhitespaceBetweenAdjacentMinipages = computed(() =>
   parsedNodes.value.some(
     (node, index, nodes) =>
@@ -351,6 +376,85 @@ const tabularAssertions = computed(() => [
       .length >= 2,
   },
 ])
+
+const spacingAssertions = computed(() => [
+  {
+    label: '\\vspace{0.4em} 可解析为块级间距节点',
+    passed: vspaceNodes.value.some(
+      (node) => node.length?.raw === '0.4em' && node.length?.css === '0.4em' && node.starred === false,
+    ),
+  },
+  {
+    label: '\\vspace*{1em} 可解析并保留星号形式',
+    passed: vspaceNodes.value.some(
+      (node) => node.length?.raw === '1em' && node.length?.css === '1em' && node.starred === true,
+    ),
+  },
+  {
+    label: '\\hspace{1.5em} 可解析为行内间距命令',
+    passed: hspaceNodes.value.some(
+      (node) => node.param === '1.5em' && node.raw === '\\hspace{1.5em}' && node.starred === false,
+    ),
+  },
+  {
+    label: '\\hspace*{2em} 可解析并标记星号形式',
+    passed: hspaceNodes.value.some(
+      (node) => node.param === '2em' && node.raw === '\\hspace*{2em}' && node.starred === true,
+    ),
+  },
+  {
+    label: '序列化保留 vspace 与 hspace 命令',
+    passed:
+      serializedLatex.value.includes('\\vspace{0.4em}') &&
+      serializedLatex.value.includes('\\vspace*{1em}') &&
+      serializedLatex.value.includes('\\hspace{1.5em}') &&
+      serializedLatex.value.includes('\\hspace*{2em}'),
+  },
+])
+
+const colorAssertions = computed(() => [
+  {
+    label: '\\textcolor{red}{...} 可解析为双参数行内颜色命令',
+    passed: colorCommandNodes.value.some(
+      (node) => node.name === 'textcolor' && node.args?.[0] === 'red' && node.args?.[1] === '红色文本',
+    ),
+  },
+  {
+    label: '\\color{blue}{...} 可作为双参数颜色命令解析',
+    passed: colorCommandNodes.value.some(
+      (node) => node.name === 'color' && node.args?.[0] === 'blue' && node.args?.[1] === '蓝色文本',
+    ),
+  },
+  {
+    label: '{\\color{green} ...} 分组声明形式可解析',
+    passed: colorCommandNodes.value.some(
+      (node) =>
+        node.name === 'color' &&
+        node.args?.[0] === 'green' &&
+        node.args?.[1]?.includes('绿色分组文本') &&
+        node.raw?.startsWith('{\\color{green}'),
+    ),
+  },
+  {
+    label: '颜色命令内容可保留嵌套行内命令',
+    passed: colorCommandNodes.value.some(
+      (node) => node.name === 'textcolor' && node.args?.[0] === '#cc3300' && node.args?.[1]?.includes('\\circled{7}'),
+    ),
+  },
+  {
+    label: '\\color{purple} 后续文本声明形式可解析',
+    passed: colorCommandNodes.value.some(
+      (node) => node.name === 'color' && node.args?.[0] === 'purple' && node.args?.[1]?.includes('紫色声明文本'),
+    ),
+  },
+  {
+    label: '序列化保留 textcolor 与 color 命令',
+    passed:
+      serializedLatex.value.includes('\\textcolor{red}{红色文本}') &&
+      serializedLatex.value.includes('\\color{blue}{蓝色文本}') &&
+      serializedLatex.value.includes('{\\color{green} 绿色分组文本}'),
+  },
+])
 </script>
 
 <template>
@@ -383,6 +487,34 @@ const tabularAssertions = computed(() => [
       <ul>
         <li
           v-for="assertion in tabularAssertions"
+          :key="assertion.label"
+          :class="{ 'is-passed': assertion.passed, 'is-failed': !assertion.passed }"
+        >
+          <span>{{ assertion.passed ? 'PASS' : 'FAIL' }}</span>
+          {{ assertion.label }}
+        </li>
+      </ul>
+    </section>
+
+    <section class="test-nesting__assertions">
+      <h2>Spacing Assertions</h2>
+      <ul>
+        <li
+          v-for="assertion in spacingAssertions"
+          :key="assertion.label"
+          :class="{ 'is-passed': assertion.passed, 'is-failed': !assertion.passed }"
+        >
+          <span>{{ assertion.passed ? 'PASS' : 'FAIL' }}</span>
+          {{ assertion.label }}
+        </li>
+      </ul>
+    </section>
+
+    <section class="test-nesting__assertions">
+      <h2>Color Assertions</h2>
+      <ul>
+        <li
+          v-for="assertion in colorAssertions"
           :key="assertion.label"
           :class="{ 'is-passed': assertion.passed, 'is-failed': !assertion.passed }"
         >

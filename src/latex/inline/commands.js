@@ -1,5 +1,7 @@
 import BlankCommand from '../../components/inline/BlankCommand.vue'
 import CircledCommand from '../../components/inline/CircledCommand.vue'
+import ColorCommand from '../../components/inline/ColorCommand.vue'
+import HspaceCommand from '../../components/inline/HspaceCommand.vue'
 import InlineMathText from '../../components/inline/InlineMathText.vue'
 import InlineText from '../../components/inline/InlineText.vue'
 import ParenCommand from '../../components/inline/ParenCommand.vue'
@@ -8,17 +10,42 @@ export const inlineCommandHandlers = {
   blank: {
     name: 'blank',
     component: BlankCommand,
+    minArgs: 0,
+    maxArgs: 1,
     toMath: () => '\\underline{\\qquad\\qquad}',
   },
   paren: {
     name: 'paren',
     component: ParenCommand,
+    minArgs: 0,
+    maxArgs: 1,
     toMath: () => '\\left(\\qquad\\right)',
   },
   circled: {
     name: 'circled',
     component: CircledCommand,
+    args: 1,
     toMath: (node) => `\\enclose{circle}{${node.param ?? ''}}`,
+  },
+  hspace: {
+    name: 'hspace',
+    component: HspaceCommand,
+    args: 1,
+    toMath: (node) => node.raw,
+  },
+  textcolor: {
+    name: 'textcolor',
+    component: ColorCommand,
+    args: 2,
+    toMath: (node) => node.raw,
+  },
+  color: {
+    name: 'color',
+    component: ColorCommand,
+    args: 2,
+    declarationGroup: true,
+    declarationRest: true,
+    toMath: (node) => node.raw,
   },
 }
 

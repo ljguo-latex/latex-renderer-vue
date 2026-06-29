@@ -13,6 +13,14 @@ const inlineMathCommandTransforms = {
     args: 1,
     toMath: (args) => `\\enclose{circle}{${args[0] ?? ''}}`,
   },
+  textcolor: {
+    args: 2,
+    toMath: (args) => `\\textcolor{${args[0] ?? ''}}{\\text{${args[1] ?? ''}}}`,
+  },
+  color: {
+    args: 2,
+    toMath: (args) => `\\color{${args[0] ?? ''}}{\\text{${args[1] ?? ''}}}`,
+  },
 }
 
 function findBalancedGroupEnd(input, openIndex) {
