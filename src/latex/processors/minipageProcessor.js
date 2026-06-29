@@ -103,6 +103,22 @@ function serializeOpening(node) {
   return `\\begin{minipage}${options}{${width}}`
 }
 
+function getMinipageAlignment(body = '') {
+  if (/^\s*\\centering\b/.test(body)) {
+    return 'center'
+  }
+
+  if (/^\s*\\raggedright\b/.test(body)) {
+    return 'left'
+  }
+
+  if (/^\s*\\raggedleft\b/.test(body)) {
+    return 'right'
+  }
+
+  return 'default'
+}
+
 export const minipageProcessor = {
   name: 'minipage',
   type: 'minipage',
@@ -119,6 +135,7 @@ export const minipageProcessor = {
       optionArgs: result.optionArgs || [],
       widthString: result.widthString || '',
       width: parseLatexLength(result.widthString || ''),
+      alignment: getMinipageAlignment(result.body || ''),
       children: parseLatex((result.body || '').trim(), processors),
       original: result.original,
     }

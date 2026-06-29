@@ -1,3 +1,5 @@
+import { findNextMathSegment } from '../latex/mathDelimiters.js'
+
 const INCLUDE_GRAPHICS_PATTERN =
   /\\begin\{(flushleft|center|flushright)\}\s*\\includegraphics(?:\[(.*?)\])?\{(.*?)\}\s*\\end\{\1\}|\\includegraphics(?:\[(.*?)\])?\{(.*?)\}/gs
 
@@ -195,8 +197,76 @@ export function updateImageSegmentAlignment(segment, alignment) {
 }
 
 export function normalizeLatexTextForPreview(content = '') {
-  return content
+  const withoutComments = removeLatexComments(content)
+  const normalizedSegments = []
+  let cursor = 0
+
+  while (cursor < withoutComments.length) {
+    const nextMathSegment = findNextMathSegment(withoutComments, cursor)
+
+    if (!nextMathSegment) {
+      normalizedSegments.push(normalizeLatexTextSegment(withoutComments.slice(cursor)))
+      break
+    }
+
+    if (nextMathSegment.start > cursor) {
+      normalizedSegments.push(normalizeLatexTextSegment(withoutComments.slice(cursor, nextMathSegment.start)))
+    }
+
+    normalizedSegments.push(withoutComments.slice(nextMathSegment.start, nextMathSegment.end))
+    cursor = nextMathSegment.end
+  }
+
+  return normalizedSegments
+    .join('')
     .replace(/\r\n/g, '\n')
     .replace(/[ \t]*\n[ \t]*/g, '\n')
     .replace(/\n{2,}/g, '\n')
+}
+
+function isEscaped(input = '', index = 0) {
+  let slashCount = 0
+  let cursor = index - 1
+
+  while (cursor >= 0 && input[cursor] === '\\') {
+    slashCount += 1
+    cursor -= 1
+  }
+
+  return slashCount % 2 === 1
+}
+
+function removeLatexComments(content = '') {
+  let result = ''
+  let cursor = 0
+
+  while (cursor < content.length) {
+    if (content[cursor] === '%' && !isEscaped(content, cursor)) {
+      cursor += 1
+
+      while (cursor < content.length && content[cursor] !== '\n' && content[cursor] !== '\r') {
+        cursor += 1
+      }
+
+      if (content[cursor] === '\r' && content[cursor + 1] === '\n') {
+        cursor += 2
+      } else if (content[cursor] === '\n' || content[cursor] === '\r') {
+        cursor += 1
+      }
+
+      continue
+    }
+
+    result += content[cursor]
+    cursor += 1
+  }
+
+  return result
+}
+
+function normalizeLatexTextSegment(content = '') {
+  return content
+    .replace(/\\hfill\b/g, '')
+    .replace(/\\centering\b/g, '')
+    .replace(/\\\\(?:\[[^\]]*\])?/g, '\n')
 }

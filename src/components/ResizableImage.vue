@@ -11,6 +11,7 @@ import {
   pxToCm,
   trimNumber,
 } from '../utils/latex'
+import { parseLatexLength } from '../latex/length'
 
 const WIDTH_COMMIT_DEBOUNCE_MS = 140
 const TOOLBAR_GAP_PX = 8
@@ -61,6 +62,11 @@ let placementFrame = null
 let resizeObserver = null
 
 const widthFromOptions = computed(() => parseLengthToPx(props.options?.width))
+const relativeWidthFromOptions = computed(() => {
+  const width = parseLatexLength(props.options?.width)
+
+  return width.kind === 'relative' || width.kind === 'percent' ? width.css : null
+})
 
 const fallbackWidthPx = computed(() => widthFromOptions.value || naturalWidth.value || 220)
 
@@ -69,20 +75,33 @@ const widthSliderValue = computed(() => Number(pxToCm(liveWidthPx.value).toFixed
 const widthSliderMin = computed(() => MIN_WIDTH_CM)
 const widthSliderMax = computed(() => MAX_WIDTH_CM)
 const figureClass = computed(() => {
+  const classes = []
+
+  if (relativeWidthFromOptions.value) {
+    classes.push('resizable-image--fluid')
+  }
+
   if (props.alignment === 'left') {
-    return 'resizable-image--left'
+    classes.push('resizable-image--left')
+    return classes
   }
 
   if (props.alignment === 'center') {
-    return 'resizable-image--center'
+    classes.push('resizable-image--center')
+    return classes
   }
 
   if (props.alignment === 'right') {
-    return 'resizable-image--right'
+    classes.push('resizable-image--right')
+    return classes
   }
 
-  return 'resizable-image--default'
+  classes.push('resizable-image--default')
+  return classes
 })
+const frameStyle = computed(() => ({
+  width: relativeWidthFromOptions.value || `${liveWidthPx.value}px`,
+}))
 
 const toolbarPlacementClass = computed(() =>
   toolbarPlacement.value === 'bottom' ? 'resizable-image--toolbar-bottom' : 'resizable-image--toolbar-top',
@@ -344,7 +363,7 @@ onBeforeUnmount(() => {
       </label>
     </div>
 
-    <div class="resizable-image__frame" :style="{ width: `${liveWidthPx}px` }" @click="openToolbar">
+    <div class="resizable-image__frame" :style="frameStyle" @click="openToolbar">
       <img
         v-if="!hasLoadError"
         class="resizable-image__media"
@@ -370,6 +389,10 @@ onBeforeUnmount(() => {
   max-width: 100%;
   position: relative;
   overflow: visible;
+}
+
+.resizable-image--fluid {
+  width: 100%;
 }
 
 .resizable-image--default,

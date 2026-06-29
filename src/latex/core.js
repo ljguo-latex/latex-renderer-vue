@@ -1,3 +1,5 @@
+import { normalizeLatexTextForPreview } from '../utils/latex'
+
 export function createTextNode(content, id) {
   return {
     id,
@@ -33,12 +35,12 @@ function normalizeBlockWhitespace(nodes, processors) {
 
     const previousNode = nodes[index - 1]
     const nextNode = nodes[index + 1]
-    let previewContent = node.content ?? ''
+    let previewContent = normalizeLatexTextForPreview(node.content ?? '')
 
     if (
       isInlineBoxNode(previousNode, processorMap) &&
       isInlineBoxNode(nextNode, processorMap) &&
-      /^\s+$/.test(previewContent)
+      /^\s*$/.test(previewContent)
     ) {
       previewContent = ''
     }

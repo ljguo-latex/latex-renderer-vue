@@ -12,11 +12,18 @@ const props = defineProps({
 
 const minipageStyle = computed(() => ({
   width: props.node.width?.css || 'auto',
+  textAlign: props.node.alignment === 'default' ? undefined : props.node.alignment,
+}))
+
+const minipageClass = computed(() => ({
+  'minipage-node--center': props.node.alignment === 'center',
+  'minipage-node--left': props.node.alignment === 'left',
+  'minipage-node--right': props.node.alignment === 'right',
 }))
 </script>
 
 <template>
-  <span class="minipage-node" :style="minipageStyle">
+  <span class="minipage-node" :class="minipageClass" :style="minipageStyle">
     <ContentNode :nodes="node.children || []" />
   </span>
 </template>
@@ -32,5 +39,14 @@ const minipageStyle = computed(() => ({
 
 .minipage-node :deep(.content-node) {
   display: block;
+}
+
+.minipage-node--center :deep(.resizable-image--default) {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.minipage-node--right :deep(.resizable-image--default) {
+  margin-left: auto;
 }
 </style>

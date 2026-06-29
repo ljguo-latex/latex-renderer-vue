@@ -85,6 +85,21 @@ aaaa
 \end{tabular}
 \end{center}
 
+测试用例 0.7：center 内并排 minipage、centering、hfill 和图注换行
+\begin{center}
+    \begin{minipage}{.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{fantastic_idea_latex_6a3ebad3e056b.jpg}\\
+        图1
+    \end{minipage}%
+    \hfill
+    \begin{minipage}{.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{fantastic_idea_latex_6a3ebad3e056b.jpg}\\
+        图2
+    \end{minipage}
+\end{center}
+
 测试用例 1：Enumerate 嵌套 Choices
 \begin{enumerate}
 \item 第一题的题干
@@ -329,6 +344,11 @@ const tabularAssertions = computed(() => [
     passed: tabularNodes.value.some(
       (node) => node.rows?.[0]?.topBorder && node.rows?.[0]?.bottomBorder && node.rows?.[1]?.bottomBorder,
     ),
+  },
+  {
+    label: 'minipage 内 \\centering 可转为居中样式',
+    passed: minipageNodes.value.filter((node) => node.width?.raw === '.49\\linewidth' && node.alignment === 'center')
+      .length >= 2,
   },
 ])
 </script>

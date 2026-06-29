@@ -1,6 +1,6 @@
 const CSS_LENGTH_PATTERN = /^(\d+(?:\.\d+)?|\.\d+)\s*(cm|mm|in|pt|px)$/i
 const CSS_PERCENT_PATTERN = /^(\d+(?:\.\d+)?|\.\d+)\s*%$/
-const RELATIVE_TEXT_WIDTH_PATTERN = /^(\d+(?:\.\d+)?|\.\d+)\s*\\(?:textwidth|linewidth|columnwidth)$/
+const RELATIVE_TEXT_WIDTH_PATTERN = /^(?:(\d+(?:\.\d+)?|\.\d+)\s*)?\\(?:textwidth|linewidth|columnwidth)$/
 
 function trimNumber(value) {
   const number = Number(value)
@@ -46,9 +46,11 @@ export function parseLatexLength(value = '') {
   const relativeMatch = raw.match(RELATIVE_TEXT_WIDTH_PATTERN)
 
   if (relativeMatch) {
+    const scale = relativeMatch[1] === undefined ? 1 : Number(relativeMatch[1])
+
     return {
       raw,
-      css: `${trimNumber(Number(relativeMatch[1]) * 100)}%`,
+      css: `${trimNumber(scale * 100)}%`,
       kind: 'relative',
     }
   }
