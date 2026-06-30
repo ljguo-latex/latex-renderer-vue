@@ -39,11 +39,16 @@ const emit = defineEmits(['update:modelValue'])
 const activeProcessors = computed(() => props.processors)
 const processorRegistry = computed(() => createProcessorRegistry(activeProcessors.value))
 const nodes = computed(() => parseLatex(props.modelValue, activeProcessors.value))
-const themeStyles = computed(() => ({
-  '--latex-renderer-theme-color': props.theme?.color || '#000000',
-  '--latex-renderer-text-color': props.theme?.textColor || '#182025',
-  '--latex-renderer-font-family': props.theme?.fontFamily || 'inherit',
-}))
+const themeStyles = computed(() => {
+  const styles = {
+    '--latex-renderer-theme-color': props.theme?.color || '#000000',
+    '--latex-renderer-text-color': props.theme?.textColor || '#182025',
+  }
+  if (props.theme?.fontFamily) {
+    styles['--latex-renderer-font-family'] = props.theme.fontFamily
+  }
+  return styles
+})
 
 provide(INLINE_COMMAND_HANDLERS_KEY, computed(() => props.inlineCommands))
 provide(IMAGE_SRC_RESOLVER_KEY, computed(() => props.imageSrcResolver))
