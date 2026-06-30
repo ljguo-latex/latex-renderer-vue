@@ -10,6 +10,9 @@ const TEST_CASE_HEADING_PATTERN = /^测试用例\s+[^：:\n]+[：:]\s*(.*)$/gm
 
 const testNesting = ref(String.raw`测试：Enumerate 和 Choices 嵌套支持
 $q = \paren{}$
+
+$a = \blank{} \text{m/s}^{2}$
+
 $q = \blank{}$
 
 将已知等式两边分别平方可得:
@@ -97,13 +100,13 @@ aaaa
 \begin{center}
     \begin{minipage}{.49\linewidth}
         \centering
-        \includegraphics[width=\linewidth]{image.png}\\
+        \includegraphics[width=.5\linewidth]{image.png}\\
         图1
     \end{minipage}%
     \hfill
     \begin{minipage}{.49\linewidth}
         \centering
-        \includegraphics[width=\linewidth]{image.png}\\
+        \includegraphics[width=.5\linewidth]{image.png}\\
         图2
     \end{minipage}
 \end{center}

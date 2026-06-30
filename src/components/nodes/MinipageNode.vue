@@ -52,7 +52,15 @@ const minipageClass = computed(() => ({
   margin-right: auto;
 }
 
+.minipage-node--center :deep(.resizable-image--fluid.resizable-image--default) {
+  justify-content: center;
+}
+
 .minipage-node--right :deep(.resizable-image--default) {
   margin-left: auto;
+}
+
+.minipage-node--right :deep(.resizable-image--fluid.resizable-image--default) {
+  justify-content: flex-end;
 }
 </style>

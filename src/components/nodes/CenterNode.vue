@@ -45,4 +45,13 @@ const textAlign = computed(() => {
 .center-node :deep(.content-node) {
   display: block;
 }
+
+.center-node :deep(.resizable-image--default) {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.center-node :deep(.resizable-image--fluid.resizable-image--default) {
+  justify-content: center;
+}
 </style>
