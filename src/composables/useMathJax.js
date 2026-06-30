@@ -4,6 +4,9 @@ let mathJaxPromise
 
 function createMathJaxConfig(resolve) {
   return {
+    output: {
+      font: 'mathjax-stix2',
+    },
     chtml: {
       scale: 0.92,
       minScale: 0.5,
@@ -87,7 +90,7 @@ export function loadMathJax() {
       const script = document.createElement('script')
       script.id = 'mathjax-script'
       script.async = true
-      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js'
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js'
       script.addEventListener('error', () => reject(new Error('MathJax failed to load.')), { once: true })
       document.head.appendChild(script)
     })

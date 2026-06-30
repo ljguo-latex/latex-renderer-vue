@@ -42,6 +42,7 @@ const nodes = computed(() => parseLatex(props.modelValue, activeProcessors.value
 const themeStyles = computed(() => ({
   '--latex-renderer-theme-color': props.theme?.color || '#000000',
   '--latex-renderer-text-color': props.theme?.textColor || '#182025',
+  '--latex-renderer-font-family': props.theme?.fontFamily || 'inherit',
 }))
 
 provide(INLINE_COMMAND_HANDLERS_KEY, computed(() => props.inlineCommands))
@@ -68,4 +69,7 @@ function handleNodeUpdate(nextNode) {
 </template>
 
 <style scoped>
+.latex-renderer {
+  font-family: var(--latex-renderer-font-family);
+}
 </style>
