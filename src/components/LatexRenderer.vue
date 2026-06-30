@@ -47,6 +47,9 @@ const themeStyles = computed(() => {
   if (props.theme?.fontFamily) {
     styles['--latex-renderer-font-family'] = props.theme.fontFamily
   }
+  if (props.theme?.fontSize) {
+    styles['--latex-renderer-font-size'] = props.theme.fontSize
+  }
   return styles
 })
 
@@ -76,5 +79,6 @@ function handleNodeUpdate(nextNode) {
 <style scoped>
 .latex-renderer {
   font-family: var(--latex-renderer-font-family);
+  font-size: var(--latex-renderer-font-size);
 }
 </style>
