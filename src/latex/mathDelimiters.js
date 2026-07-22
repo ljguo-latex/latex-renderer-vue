@@ -1,14 +1,4 @@
-function isEscaped(input, index) {
-  let slashCount = 0
-  let cursor = index - 1
-
-  while (cursor >= 0 && input[cursor] === '\\') {
-    slashCount += 1
-    cursor -= 1
-  }
-
-  return slashCount % 2 === 1
-}
+import { isEscaped } from './utils/balance.js'
 
 export const MATH_DELIMITERS = [
   { open: '$$', close: '$$' },

@@ -1,3 +1,5 @@
+import { findBalancedBraceEnd } from './utils/balance.js'
+
 const textCommandStart = '\\text{'
 
 const inlineMathCommandTransforms = {
@@ -21,34 +23,6 @@ const inlineMathCommandTransforms = {
     args: 2,
     toMath: (args) => `\\color{${args[0] ?? ''}}{\\text{${args[1] ?? ''}}}`,
   },
-}
-
-function findBalancedGroupEnd(input, openIndex) {
-  if (input[openIndex] !== '{') {
-    return -1
-  }
-
-  let depth = 0
-
-  for (let index = openIndex; index < input.length; index += 1) {
-    const char = input[index]
-    const previous = input[index - 1]
-
-    if (char === '{' && previous !== '\\') {
-      depth += 1
-      continue
-    }
-
-    if (char === '}' && previous !== '\\') {
-      depth -= 1
-
-      if (depth === 0) {
-        return index
-      }
-    }
-  }
-
-  return -1
 }
 
 function wrapTextSegment(segment) {
@@ -85,7 +59,7 @@ function readSupportedCommand(input, start) {
       return null
     }
 
-    const argEnd = findBalancedGroupEnd(input, cursor)
+    const argEnd = findBalancedBraceEnd(input, cursor)
 
     if (argEnd === -1) {
       return null
@@ -96,7 +70,7 @@ function readSupportedCommand(input, start) {
   }
 
   if (transform.args === 0 && input[cursor] === '{') {
-    const emptyArgEnd = findBalancedGroupEnd(input, cursor)
+    const emptyArgEnd = findBalancedBraceEnd(input, cursor)
 
     if (emptyArgEnd !== -1) {
       cursor = emptyArgEnd + 1
@@ -149,7 +123,7 @@ export function rewriteInlineCommandsInText(latex = '') {
     }
 
     const bodyStart = start + textCommandStart.length
-    const bodyEnd = findBalancedGroupEnd(latex, bodyStart - 1)
+    const bodyEnd = findBalancedBraceEnd(latex, bodyStart - 1)
 
     if (bodyEnd === -1) {
       output += latex.slice(cursor)

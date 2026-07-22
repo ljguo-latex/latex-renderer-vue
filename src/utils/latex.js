@@ -1,7 +1,5 @@
 import { findNextMathSegment } from '../latex/mathDelimiters.js'
-
-const INCLUDE_GRAPHICS_PATTERN =
-  /\\begin\{(flushleft|center|flushright)\}\s*\\includegraphics(?:\[(.*?)\])?\{(.*?)\}\s*\\end\{\1\}|\\includegraphics(?:\[(.*?)\])?\{(.*?)\}/gs
+import { isEscaped } from '../latex/utils/balance.js'
 
 export const PX_PER_CM = 37.79527559
 export const MIN_WIDTH_CM = 1
@@ -9,126 +7,6 @@ export const MIN_WIDTH_PX = MIN_WIDTH_CM * PX_PER_CM
 export const MAX_WIDTH_CM = 18
 export const MAX_WIDTH_PX = MAX_WIDTH_CM * PX_PER_CM
 export const IMAGE_ALIGNMENTS = ['default', 'left', 'center', 'right']
-
-const LATEX_ALIGNMENT_TO_UI = {
-  flushleft: 'left',
-  center: 'center',
-  flushright: 'right',
-}
-
-const UI_ALIGNMENT_TO_LATEX = {
-  left: 'flushleft',
-  center: 'center',
-  right: 'flushright',
-}
-
-export function parseImageOptions(optionString = '') {
-  if (!optionString.trim()) {
-    return {}
-  }
-
-  return optionString
-    .split(',')
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .reduce((options, part) => {
-      const separatorIndex = part.indexOf('=')
-
-      if (separatorIndex === -1) {
-        options[part] = true
-        return options
-      }
-
-      const key = part.slice(0, separatorIndex).trim()
-      const value = part.slice(separatorIndex + 1).trim()
-
-      if (key) {
-        options[key] = value
-      }
-
-      return options
-    }, {})
-}
-
-export function stringifyImageOptions(options = {}) {
-  const entries = Object.entries(options).filter(([, value]) => value !== undefined && value !== '')
-
-  if (!entries.length) {
-    return ''
-  }
-
-  return entries
-    .map(([key, value]) => (value === true ? key : `${key}=${value}`))
-    .join(',')
-}
-
-export function parseLatexWithImages(latex = '') {
-  const segments = []
-  let lastIndex = 0
-  let imageCount = 0
-
-  for (const match of latex.matchAll(INCLUDE_GRAPHICS_PATTERN)) {
-    const [fullMatch, alignedEnvironment, alignedOptions, alignedSrc, rawOptions, rawSrc] = match
-    const matchIndex = match.index ?? 0
-    const textBefore = latex.slice(lastIndex, matchIndex)
-    const alignment = LATEX_ALIGNMENT_TO_UI[alignedEnvironment] || 'default'
-    const options = alignedOptions ?? rawOptions ?? ''
-    const src = alignedSrc ?? rawSrc ?? ''
-
-    if (textBefore) {
-      segments.push({
-        type: 'text',
-        id: `text_${segments.length + 1}`,
-        content: textBefore,
-      })
-    }
-
-    imageCount += 1
-    segments.push({
-      type: 'image',
-      id: `img_${imageCount}`,
-      src: src.trim(),
-      options: parseImageOptions(options),
-      alignment,
-      original: fullMatch,
-    })
-
-    lastIndex = matchIndex + fullMatch.length
-  }
-
-  const trailingText = latex.slice(lastIndex)
-
-  if (trailingText || segments.length === 0) {
-    segments.push({
-      type: 'text',
-      id: `text_${segments.length + 1}`,
-      content: trailingText,
-    })
-  }
-
-  return segments
-}
-
-export function serializeLatex(segments = []) {
-  return segments
-    .map((segment) => {
-      if (segment.type === 'text') {
-        return segment.content ?? ''
-      }
-
-      const optionString = stringifyImageOptions(segment.options)
-      const optionBlock = optionString ? `[${optionString}]` : ''
-      const imageLatex = `\\includegraphics${optionBlock}{${segment.src}}`
-      const environment = UI_ALIGNMENT_TO_LATEX[segment.alignment]
-
-      if (!environment) {
-        return imageLatex
-      }
-
-      return `\\begin{${environment}}\n${imageLatex}\n\\end{${environment}}`
-    })
-    .join('')
-}
 
 export function pxToCm(px) {
   return px / PX_PER_CM
@@ -224,18 +102,6 @@ export function normalizeLatexTextForPreview(content = '') {
     .replace(/\n{2,}/g, '\n')
 }
 
-function isEscaped(input = '', index = 0) {
-  let slashCount = 0
-  let cursor = index - 1
-
-  while (cursor >= 0 && input[cursor] === '\\') {
-    slashCount += 1
-    cursor -= 1
-  }
-
-  return slashCount % 2 === 1
-}
-
 function removeLatexComments(content = '') {
   let result = ''
   let cursor = 0
@@ -264,9 +130,31 @@ function removeLatexComments(content = '') {
   return result
 }
 
+function replaceUnescaped(content, pattern, replacement) {
+  return content.replace(pattern, (match, offset, source) =>
+    isEscaped(source, offset) ? match : replacement,
+  )
+}
+
+const TEXT_MODE_REPLACEMENTS = [
+  [/~/g, '\u00A0'],
+  [/\\qquad(?![A-Za-z])/g, '\u2003\u2003'],
+  [/\\quad(?![A-Za-z])/g, '\u2003'],
+  [/\\enspace(?![A-Za-z])/g, '\u2002'],
+  [/\\,/g, '\u2009'],
+  [/\\;/g, '\u2005'],
+  [/\\l?dots(?![A-Za-z])/g, '…'],
+  [/\\newline(?![A-Za-z])/g, '\n'],
+]
+
 function normalizeLatexTextSegment(content = '') {
-  return content
-    .replace(/\\([%&#_$])/g, '$1')
+  let result = content.replace(/\\([%&#_$])/g, '$1')
+
+  for (const [pattern, replacement] of TEXT_MODE_REPLACEMENTS) {
+    result = replaceUnescaped(result, pattern, replacement)
+  }
+
+  return result
     .replace(/\\hfill\b/g, '')
     .replace(/\\centering\b/g, '')
     .replace(/\\\\(?:\[[^\]]*\])?/g, '\n')

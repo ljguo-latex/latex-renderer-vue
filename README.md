@@ -187,15 +187,30 @@ Inline commands are parsed into `{ type, name, param, raw }`.
 
 Current built-in commands:
 
-- `\blank`
-- `\blank{}`
-- `\paren`
-- `\paren{}`
+- `\blank`, `\blank{}`
+- `\paren`, `\paren{}`
 - `\circled{...}`
 - `\hspace{...}`
-- `\textcolor{...}{...}`
-- `\color{...}{...}`
-- `{\color{...} ...}`
+- `\textcolor{...}{...}`, `\color{...}{...}`, `{\color{...} ...}`
+- `\textbf{...}`, `\textit{...}`, `\emph{...}`
+- `\underline{...}`, `\uline{...}`, `\uwave{...}`, `\sout{...}`, `\overline{...}`
+- `\texttt{...}`, `\textrm{...}`, `\textsf{...}`
+- `\textsuperscript{...}`, `\textsubscript{...}`
+
+Text-mode typography is normalized for preview: `~` (non-breaking space),
+`\quad` / `\qquad` / `\enspace` / `\,` / `\;` (spacing), `\ldots` / `\dots`
+(ellipsis), `\newline` (line break), and escaped braces `\{` `\}` render as
+literal braces. Bare groups `{...}` are transparent, matching LaTeX scoping
+semantics.
+
+### Nested Commands
+
+Wrapping commands (`\textcolor`, `\textbf`, `\textit`, …) are parsed recursively —
+their argument body is re-fed through the same inline-command pipeline. This means
+`\textcolor{pink}{\textbf{xxx}}`, `\textbf{\textit{x}}`, or any deeper combination
+composes automatically, as long as every command in the chain has a handler
+registered. Unknown commands fall through to their raw literal, so you can drop
+them in as needed.
 
 To extend them in your own project:
 

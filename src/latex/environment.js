@@ -1,12 +1,4 @@
-function skipWhitespace(input = '', from = 0) {
-  let cursor = from
-
-  while (cursor < input.length && /\s/.test(input[cursor])) {
-    cursor++
-  }
-
-  return cursor
-}
+import { skipWhitespace } from './utils/balance.js'
 
 export function readRequiredBraceArgument(input = '', from = 0) {
   const start = skipWhitespace(input, from)

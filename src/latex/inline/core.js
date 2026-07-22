@@ -1,3 +1,4 @@
+import { findBalancedBraceEnd, isEscaped, skipWhitespace } from '../utils/balance.js'
 import { findNextMathSegment } from '../mathDelimiters.js'
 
 function createTextNode(content, id) {
@@ -14,44 +15,6 @@ function createMathNode(content, id) {
     type: 'math',
     content,
   }
-}
-
-function findBalancedBraceEnd(input = '', openIndex = 0) {
-  if (input[openIndex] !== '{') {
-    return -1
-  }
-
-  let depth = 0
-
-  for (let index = openIndex; index < input.length; index += 1) {
-    const char = input[index]
-    const previous = input[index - 1]
-
-    if (char === '{' && previous !== '\\') {
-      depth += 1
-      continue
-    }
-
-    if (char === '}' && previous !== '\\') {
-      depth -= 1
-
-      if (depth === 0) {
-        return index
-      }
-    }
-  }
-
-  return -1
-}
-
-function skipWhitespace(input = '', from = 0) {
-  let cursor = from
-
-  while (cursor < input.length && /\s/.test(input[cursor])) {
-    cursor += 1
-  }
-
-  return cursor
 }
 
 function readBraceArgument(input = '', from = 0) {
@@ -181,41 +144,6 @@ function cloneRegExp(pattern) {
   return new RegExp(pattern.source, pattern.flags)
 }
 
-function splitMathSegments(content = '') {
-  const segments = []
-  let cursor = 0
-
-  while (cursor < content.length) {
-    const nextMathSegment = findNextMathSegment(content, cursor)
-
-    if (!nextMathSegment) {
-      if (cursor < content.length) {
-        segments.push({
-          type: 'text',
-          content: content.slice(cursor),
-        })
-      }
-      break
-    }
-
-    if (nextMathSegment.start > cursor) {
-      segments.push({
-        type: 'text',
-        content: content.slice(cursor, nextMathSegment.start),
-      })
-    }
-
-    segments.push({
-      type: 'math',
-      content: content.slice(nextMathSegment.start, nextMathSegment.end),
-    })
-
-    cursor = nextMathSegment.end
-  }
-
-  return segments
-}
-
 function resolveCommandConfig(handlersOrNames) {
   if (Array.isArray(handlersOrNames)) {
     return {
@@ -237,26 +165,110 @@ function resolveCommandConfig(handlersOrNames) {
   }
 }
 
-function parseCommandTextSegment(content, commandPattern, handlers, createId) {
+function findNextUnescapedBrace(content, from) {
+  for (let index = from; index < content.length; index += 1) {
+    if (content[index] === '{' && !isEscaped(content, index)) {
+      return index
+    }
+  }
+
+  return -1
+}
+
+// `\unknown{...}` / `\unknown[...]{...}`: the brace is an argument of an
+// unregistered command, so it must stay literal instead of being treated as a
+// transparent group.
+const UNKNOWN_COMMAND_PREFIX_PATTERN = /\\[A-Za-z]+\*?(\[[^\]]*\])*\s*$/
+
+function skipLiteralArgumentGroups(content, braceIndex) {
+  let cursor = braceIndex
+
+  while (cursor < content.length) {
+    const argStart = skipWhitespace(content, cursor)
+
+    if (content[argStart] !== '{') {
+      break
+    }
+
+    const argEnd = findBalancedBraceEnd(content, argStart)
+
+    if (argEnd === -1) {
+      break
+    }
+
+    cursor = argEnd + 1
+  }
+
+  return cursor
+}
+
+// Scans math segments, registered commands, and bare groups in one pass: the
+// earliest occurrence wins, so `{$x$}` is a group containing math while
+// `$f{x}$` keeps its braces inside the math segment.
+function parseInlineSegments(content, commandPattern, handlers, createId) {
   if (!content) {
     return []
   }
 
-  if (!commandPattern) {
-    return [createTextNode(content, createId('inline_text'))]
-  }
-
   const nodes = []
-  const pattern = cloneRegExp(commandPattern)
+  const pattern = commandPattern ? cloneRegExp(commandPattern) : null
   let cursor = 0
   let textStart = 0
 
-  while (cursor < content.length) {
-    pattern.lastIndex = cursor
-    const match = pattern.exec(content)
+  const flushText = (end) => {
+    if (end > textStart) {
+      nodes.push(createTextNode(content.slice(textStart, end), createId('inline_text')))
+    }
+  }
 
-    if (!match) {
+  while (cursor < content.length) {
+    const mathSegment = findNextMathSegment(content, cursor)
+    let match = null
+
+    if (pattern) {
+      pattern.lastIndex = cursor
+      match = pattern.exec(content)
+    }
+
+    const braceIndex = findNextUnescapedBrace(content, cursor)
+
+    const mathStart = mathSegment ? mathSegment.start : Infinity
+    const commandStart = match ? match.index : Infinity
+    const braceStart = braceIndex === -1 ? Infinity : braceIndex
+
+    if (mathStart === Infinity && commandStart === Infinity && braceStart === Infinity) {
       break
+    }
+
+    if (mathStart < commandStart && mathStart < braceStart) {
+      flushText(mathStart)
+      nodes.push(createMathNode(
+        serializeMathSegment(content.slice(mathSegment.start, mathSegment.end), commandPattern, handlers),
+        createId('inline_math'),
+      ))
+      cursor = mathSegment.end
+      textStart = cursor
+      continue
+    }
+
+    if (braceStart < commandStart) {
+      if (UNKNOWN_COMMAND_PREFIX_PATTERN.test(content.slice(0, braceIndex))) {
+        cursor = Math.max(skipLiteralArgumentGroups(content, braceIndex), braceIndex + 1)
+        continue
+      }
+
+      const groupEnd = findBalancedBraceEnd(content, braceIndex)
+
+      if (groupEnd === -1) {
+        cursor = braceIndex + 1
+        continue
+      }
+
+      flushText(braceIndex)
+      nodes.push(...parseInlineSegments(content.slice(braceIndex + 1, groupEnd), commandPattern, handlers, createId))
+      cursor = groupEnd + 1
+      textStart = cursor
+      continue
     }
 
     const commandNode = createCommandNode(content, match, 'inline_command_pending', handlers)
@@ -266,9 +278,7 @@ function parseCommandTextSegment(content, commandPattern, handlers, createId) {
       continue
     }
 
-    if (commandNode.start > textStart) {
-      nodes.push(createTextNode(content.slice(textStart, commandNode.start), createId('inline_text')))
-    }
+    flushText(commandNode.start)
 
     nodes.push({
       ...commandNode,
@@ -280,10 +290,6 @@ function parseCommandTextSegment(content, commandPattern, handlers, createId) {
 
   if (textStart < content.length) {
     nodes.push(createTextNode(content.slice(textStart), createId('inline_text')))
-  }
-
-  if (!nodes.length) {
-    nodes.push(createTextNode(content, createId('inline_text')))
   }
 
   return nodes
@@ -343,26 +349,13 @@ function serializeMathSegment(content, commandPattern, handlers) {
 export function parseInlineContent(content = '', handlersOrNames = {}) {
   const { handlers, commandNames } = resolveCommandConfig(handlersOrNames)
   const commandPattern = buildCommandPattern(commandNames)
-  const segments = splitMathSegments(content)
-  const nodes = []
   let count = 0
 
   const createId = (prefix) => `${prefix}_${++count}`
 
-  if (!segments.length) {
-    return [createTextNode(content, 'inline_text_1')]
-  }
+  const nodes = parseInlineSegments(content, commandPattern, handlers, createId)
 
-  for (const segment of segments) {
-    if (segment.type === 'math') {
-      nodes.push(createMathNode(serializeMathSegment(segment.content, commandPattern, handlers), createId('inline_math')))
-      continue
-    }
-
-    nodes.push(...parseCommandTextSegment(segment.content, commandPattern, handlers, createId))
-  }
-
-  if (!nodes.length) {
+  if (!nodes.length && !content) {
     nodes.push(createTextNode(content, 'inline_text_1'))
   }
 

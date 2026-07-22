@@ -5,6 +5,17 @@ import HspaceCommand from '../../components/inline/HspaceCommand.vue'
 import InlineMathText from '../../components/inline/InlineMathText.vue'
 import InlineText from '../../components/inline/InlineText.vue'
 import ParenCommand from '../../components/inline/ParenCommand.vue'
+import TextStyleCommand from '../../components/inline/TextStyleCommand.vue'
+
+function textStyle(name, style) {
+  return {
+    name,
+    component: TextStyleCommand,
+    args: 1,
+    style,
+    toMath: (node) => node.raw,
+  }
+}
 
 export const inlineCommandHandlers = {
   blank: {
@@ -47,6 +58,19 @@ export const inlineCommandHandlers = {
     declarationRest: true,
     toMath: (node) => node.raw,
   },
+  textbf: textStyle('textbf', 'bold'),
+  textit: textStyle('textit', 'italic'),
+  emph: textStyle('emph', 'italic'),
+  underline: textStyle('underline', 'underline'),
+  uline: textStyle('uline', 'underline'),
+  sout: textStyle('sout', 'strike'),
+  uwave: textStyle('uwave', 'underline'),
+  overline: textStyle('overline', 'overline'),
+  texttt: textStyle('texttt', 'mono'),
+  textrm: textStyle('textrm', 'serif'),
+  textsf: textStyle('textsf', 'sans'),
+  textsuperscript: textStyle('textsuperscript', 'sup'),
+  textsubscript: textStyle('textsubscript', 'sub'),
 }
 
 export function normalizeInlineNode(node, handlers = inlineCommandHandlers) {
@@ -78,5 +102,6 @@ export function normalizeInlineNode(node, handlers = inlineCommandHandlers) {
   return {
     ...node,
     component: handler.component,
+    handler,
   }
 }

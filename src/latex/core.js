@@ -234,9 +234,10 @@ function replaceInRows(rows = [], nextNode) {
   const nextRows = rows.map((row) => {
     let rowChanged = false
     const nextCells = (row.cells || []).map((cell) => {
-      const nextChildren = replaceInNodeList(cell.children || [], nextNode)
+      const originalChildren = cell.children || []
+      const nextChildren = replaceInNodeList(originalChildren, nextNode)
 
-      if (nextChildren !== (cell.children || [])) {
+      if (nextChildren !== originalChildren) {
         rowChanged = true
         return {
           ...cell,

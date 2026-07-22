@@ -8,7 +8,7 @@ function createMathJaxConfig(resolve) {
       font: 'mathjax-stix2',
     },
     chtml: {
-      scale: 0.92,
+      scale: 1.0,
       minScale: 0.5,
       mathmlSpacing: false,
       mtextInheritFont: true,

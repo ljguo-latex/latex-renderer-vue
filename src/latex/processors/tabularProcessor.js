@@ -1,21 +1,10 @@
 import TabularNode from '../../components/nodes/TabularNode.vue'
 import { parseLatex, prefixNodeIds, serializeLatex } from '../core'
 import { readOptionalBracketArgument, readRequiredBraceArgument } from '../environment'
+import { isEscaped, readBalancedGroup } from '../utils/balance.js'
 
 const BEGIN_TOKEN = '\\begin{tabular}'
 const END_TOKEN = '\\end{tabular}'
-
-function isEscaped(input = '', index = 0) {
-  let slashCount = 0
-  let cursor = index - 1
-
-  while (cursor >= 0 && input[cursor] === '\\') {
-    slashCount += 1
-    cursor -= 1
-  }
-
-  return slashCount % 2 === 1
-}
 
 function readTabularOpening(input = '', start = 0) {
   let cursor = start + BEGIN_TOKEN.length
@@ -94,34 +83,6 @@ function findTabularBlock(input = '', from = 0) {
     }
 
     return null
-  }
-
-  return null
-}
-
-function readBalancedGroup(input = '', from = 0, open = '{', close = '}') {
-  if (input[from] !== open) {
-    return null
-  }
-
-  let depth = 0
-
-  for (let cursor = from; cursor < input.length; cursor += 1) {
-    if (input[cursor] === open && !isEscaped(input, cursor)) {
-      depth += 1
-      continue
-    }
-
-    if (input[cursor] === close && !isEscaped(input, cursor)) {
-      depth -= 1
-
-      if (depth === 0) {
-        return {
-          end: cursor + 1,
-          content: input.slice(from + 1, cursor),
-        }
-      }
-    }
   }
 
   return null

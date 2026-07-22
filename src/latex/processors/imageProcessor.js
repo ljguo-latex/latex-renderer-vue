@@ -1,59 +1,11 @@
 import ImageNode from '../../components/nodes/ImageNode.vue'
-
-const IMAGE_PATTERN =
-  /\\begin\{(flushleft|center|flushright)\}\s*\\includegraphics(?:\[(.*?)\])?\{(.*?)\}\s*\\end\{\1\}|\\includegraphics(?:\[(.*?)\])?\{(.*?)\}/gs
-
-const LATEX_ALIGNMENT_TO_UI = {
-  flushleft: 'left',
-  center: 'center',
-  flushright: 'right',
-}
-
-const UI_ALIGNMENT_TO_LATEX = {
-  left: 'flushleft',
-  center: 'center',
-  right: 'flushright',
-}
-
-function parseImageOptions(optionString = '') {
-  if (!optionString.trim()) {
-    return {}
-  }
-
-  return optionString
-    .split(',')
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .reduce((options, part) => {
-      const separatorIndex = part.indexOf('=')
-
-      if (separatorIndex === -1) {
-        options[part] = true
-        return options
-      }
-
-      const key = part.slice(0, separatorIndex).trim()
-      const value = part.slice(separatorIndex + 1).trim()
-
-      if (key) {
-        options[key] = value
-      }
-
-      return options
-    }, {})
-}
-
-function stringifyImageOptions(options = {}) {
-  const entries = Object.entries(options).filter(([, value]) => value !== undefined && value !== '')
-
-  if (!entries.length) {
-    return ''
-  }
-
-  return entries
-    .map(([key, value]) => (value === true ? key : `${key}=${value}`))
-    .join(',')
-}
+import {
+  INCLUDE_GRAPHICS_PATTERN,
+  LATEX_ALIGNMENT_TO_UI,
+  UI_ALIGNMENT_TO_LATEX,
+  parseImageOptions,
+  stringifyImageOptions,
+} from '../imageOptions.js'
 
 export const imageProcessor = {
   name: 'image',
@@ -63,9 +15,8 @@ export const imageProcessor = {
   component: ImageNode,
   isEditable: ({ editableImages }) => editableImages,
   find(input, from) {
-    const pattern = new RegExp(IMAGE_PATTERN)
-    pattern.lastIndex = from
-    const match = pattern.exec(input)
+    INCLUDE_GRAPHICS_PATTERN.lastIndex = from
+    const match = INCLUDE_GRAPHICS_PATTERN.exec(input)
 
     if (!match) {
       return null

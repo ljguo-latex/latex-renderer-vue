@@ -2,7 +2,7 @@
 import { computed, provide } from 'vue'
 
 import { parseLatex, replaceNodeDeep, serializeLatex } from '../latex/core'
-import { IMAGE_SRC_RESOLVER_KEY } from '../latex/imageContext'
+import { IDENTITY_IMAGE_SRC_RESOLVER, IMAGE_SRC_RESOLVER_KEY } from '../latex/imageContext'
 import { inlineCommandHandlers as defaultInlineCommandHandlers } from '../latex/inline/commands'
 import { INLINE_COMMAND_HANDLERS_KEY } from '../latex/inline/context'
 import { createProcessorRegistry, defaultProcessors } from '../latex/processors'
@@ -26,7 +26,7 @@ const props = defineProps({
   },
   imageSrcResolver: {
     type: Function,
-    default: ({ src }) => src,
+    default: () => IDENTITY_IMAGE_SRC_RESOLVER,
   },
   theme: {
     type: Object,
