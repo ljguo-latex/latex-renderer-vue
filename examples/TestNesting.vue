@@ -8,76 +8,7 @@ import testImageSrc from './assets/image.png'
 const CASE_NUMERALS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三', '十四']
 const TEST_CASE_HEADING_PATTERN = /^测试用例\s+[^：:\n]+[：:]\s*(.*)$/gm
 
-const testNesting = ref(String.raw`
-
-帆船比赛中, 运动员可借助风力计测定风速的大小与方向, 测出的结果在航海学中称为视风风速, 视风风速对应的向量是真风风速对应的向量与船行风速对应的向量之和, 其中船行风速对应的向量与船速对应的向量大小相等, 方向相反.
-图1给出了部分风力等级, 名称与风速大小的对应关系.
-已知某帆船运动员在某时刻测得的视风风速对应的向量与船速对应的向量如图2所示(线段长度代表速度大小, 单位: $\mathrm{m/s}$), 则该时刻的真风为\paren{}.
-\begin{center}
-\begin{minipage}[t]{0.62\linewidth}
-    \centering
-    \begin{tabular}{|c|c|c|}
-        \hline
-        级数 & 名称 & 风速大小（单位：$\mathrm{m/s}$） \\
-        \hline
-        2 & 轻风 & $1.6\sim3.3$ \\
-        \hline
-        3 & 微风 & $3.4\sim5.4$ \\
-        \hline
-        4 & 和风 & $5.5\sim7.9$ \\
-        \hline
-        5 & 劲风 & $8.0\sim10.7$ \\
-        \hline
-    \end{tabular}
-\end{minipage}
-\hfill
-\begin{minipage}[t]{0.32\linewidth}
-    \centering
-    \includegraphics[
-        keepaspectratio,
-        width=\linewidth
-    ]{fantastic_idea_latex_ead907b18d2f23c302bae18f4423245b829a788c12483af459f690c97d5fceb2.png}
-\end{minipage}
-\end{center}
-
-
-\begin{choices}
-  \item 轻风
-  \item 微风
-  \item 和风
-  \item 劲风
-\end{choices}
-
-
-
-
-测试：Enumerate 和 Choices 嵌套支持
-
-
-水的化学式为 $\ce{H2O}$。在通电条件下，水会分解生成氢气和氧气：\paren{}
-
-
-下列事实不能用勒夏特列原理解释的是 \paren{}
-
-$$
-\ce{2H2O(l) ->[\text{通电}] 2H2(g) ^ + O2(g) ^}
-$$
-
-硫酸钠与氯化钡反应会生成硫酸钡沉淀：
-
-$$
-\ce{Na2SO4(aq) + BaCl2(aq) -> BaSO4(s) v + 2NaCl(aq)}
-$$
-
-对应的离子方程式为：
-
-$$
-\ce{Ba^2+(aq) + SO4^2-(aq) -> BaSO4(s) v}
-$$
-
-实验温度为 $\pu{25 °C}$，加入的氯化钡溶液体积为 $\pu{10 mL}$，浓度为 $\pu{0.1 mol/L}$。
-
-
+const testNesting = ref(String.raw`测试：Enumerate 和 Choices 嵌套支持
 $q = \paren{}$
 
 \textcolor{red}{\textbf{test}}

@@ -38,25 +38,7 @@ const emit = defineEmits(['update:modelValue'])
 
 const activeProcessors = computed(() => props.processors)
 const processorRegistry = computed(() => createProcessorRegistry(activeProcessors.value))
-const nodes = computed(() => {
-  console.log('[LatexRenderer] About to parse, modelValue:', {
-    length: props.modelValue.length,
-    charCodeAt137: props.modelValue.charCodeAt?.(137),
-    charCodeAt138: props.modelValue.charCodeAt?.(138),
-    substring135_145: props.modelValue.substring?.(135, 145)
-  })
-
-  const parsed = parseLatex(props.modelValue, activeProcessors.value)
-
-  console.log('[LatexRenderer] Parsed LaTeX:', {
-    inputLength: props.modelValue.length,
-    nodesCount: parsed.length,
-    nodeTypes: parsed.map(n => n.type),
-    firstTextNodeContent: parsed.find(n => n.type === 'text')?.content?.substring?.(130, 150)
-  })
-
-  return parsed
-})
+const nodes = computed(() => parseLatex(props.modelValue, activeProcessors.value))
 const themeStyles = computed(() => {
   const styles = {
     '--latex-renderer-theme-color': props.theme?.color || '#000000',
@@ -79,22 +61,9 @@ function handleNodeUpdate(nextNode) {
   const nextNodes = replaceNodeDeep(nodes.value, nextNode)
   const serialized = serializeLatex(nextNodes, activeProcessors.value)
 
-  console.log('[LatexRenderer] handleNodeUpdate called:', {
-    nodeType: nextNode.type,
-    nodeId: nextNode.id,
-    originalValue: props.modelValue,
-    serializedValue: serialized,
-    originalLength: props.modelValue.length,
-    serializedLength: serialized.length,
-    changed: serialized !== props.modelValue
-  })
-
-  // Debug: 只在内容真正改变时才触发更新
+  // 内容未变化时不回写，避免预览覆盖编辑器里的原始写法
   if (serialized !== props.modelValue) {
-    console.log('[LatexRenderer] Emitting update:modelValue from handleNodeUpdate')
     emit('update:modelValue', serialized)
-  } else {
-    console.log('[LatexRenderer] Content unchanged, skipping update')
   }
 }
 </script>
