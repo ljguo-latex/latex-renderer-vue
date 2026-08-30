@@ -14,7 +14,18 @@ function createMathJaxConfig(resolve) {
       mtextInheritFont: true,
     },
     loader: {
-      load: ['[tex]/mhchem', '[tex]/extpfeil', '[tex]/enclose', '[tex]/color', '[tex]/html'],
+      load: [
+        '[tex]/mhchem',
+        '[tex]/extpfeil',
+        '[tex]/enclose',
+        '[tex]/color',
+        '[tex]/html',
+        '[tex]/mathtools',
+        '[tex]/cancel',
+        '[tex]/physics',
+        '[tex]/boldsymbol',
+        '[tex]/upgreek',
+      ],
     },
     tex: {
       inlineMath: [
@@ -25,7 +36,19 @@ function createMathJaxConfig(resolve) {
         ['$$', '$$'],
         ['\\[', '\\]'],
       ],
-      packages: { '[+]': ['mhchem', 'extpfeil', 'enclose', 'color', 'html'] },
+      packages: { '[+]': [
+          'mhchem',
+          'extpfeil',
+          'enclose',
+          'color',
+          'html',
+          'mathtools',
+          'cancel',
+          'physics',
+          'boldsymbol',
+          'upgreek',
+        ]
+      },
       macros: {
         overarc: ['\\overset{\\Large\\frown}{#1}', 1],
         circled: ['\\class{math-circled}{\\enclose{circle}{#1}}', 1],
