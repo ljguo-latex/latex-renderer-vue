@@ -38,7 +38,15 @@ const emit = defineEmits(['update:modelValue'])
 
 const activeProcessors = computed(() => props.processors)
 const processorRegistry = computed(() => createProcessorRegistry(activeProcessors.value))
-const nodes = computed(() => parseLatex(props.modelValue, activeProcessors.value))
+const nodes = computed(() => {
+  const parsed = parseLatex(props.modelValue, activeProcessors.value)
+  console.log('[LatexRenderer] Parsing LaTeX:', {
+    inputLength: props.modelValue.length,
+    nodesCount: parsed.length,
+    nodeTypes: parsed.map(n => n.type)
+  })
+  return parsed
+})
 const themeStyles = computed(() => {
   const styles = {
     '--latex-renderer-theme-color': props.theme?.color || '#000000',

@@ -126,7 +126,7 @@ export function parseLatex(input = '', processors = []) {
 export function serializeLatex(nodes = [], processors = []) {
   const processorMap = new Map(processors.map((processor) => [processor.type, processor]))
 
-  return nodes
+  const result = nodes
     .map((node) => {
       if (node.type === 'text') {
         return node.content ?? ''
@@ -141,6 +141,14 @@ export function serializeLatex(nodes = [], processors = []) {
       return processor.serialize(node, { processors })
     })
     .join('')
+
+  console.log('[serializeLatex] Serialized:', {
+    nodesCount: nodes.length,
+    resultLength: result.length,
+    firstTextNode: nodes.find(n => n.type === 'text')?.content?.substring(0, 100)
+  })
+
+  return result
 }
 
 export function replaceNode(nodes, nextNode) {
