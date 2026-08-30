@@ -61,15 +61,19 @@ function handleNodeUpdate(nextNode) {
   const nextNodes = replaceNodeDeep(nodes.value, nextNode)
   const serialized = serializeLatex(nextNodes, activeProcessors.value)
 
+  console.log('[LatexRenderer] handleNodeUpdate called:', {
+    nodeType: nextNode.type,
+    nodeId: nextNode.id,
+    originalValue: props.modelValue,
+    serializedValue: serialized,
+    originalLength: props.modelValue.length,
+    serializedLength: serialized.length,
+    changed: serialized !== props.modelValue
+  })
+
   // Debug: 只在内容真正改变时才触发更新
   if (serialized !== props.modelValue) {
-    console.log('[LatexRenderer] Content changed:', {
-      node: nextNode.type,
-      nodeId: nextNode.id,
-      originalLength: props.modelValue.length,
-      serializedLength: serialized.length,
-      diff: serialized.length - props.modelValue.length
-    })
+    console.log('[LatexRenderer] Emitting update:modelValue')
     emit('update:modelValue', serialized)
   } else {
     console.log('[LatexRenderer] Content unchanged, skipping update')
