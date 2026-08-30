@@ -59,7 +59,21 @@ provide('latex-processors', activeProcessors)
 
 function handleNodeUpdate(nextNode) {
   const nextNodes = replaceNodeDeep(nodes.value, nextNode)
-  emit('update:modelValue', serializeLatex(nextNodes, activeProcessors.value))
+  const serialized = serializeLatex(nextNodes, activeProcessors.value)
+
+  // Debug: 只在内容真正改变时才触发更新
+  if (serialized !== props.modelValue) {
+    console.log('[LatexRenderer] Content changed:', {
+      node: nextNode.type,
+      nodeId: nextNode.id,
+      originalLength: props.modelValue.length,
+      serializedLength: serialized.length,
+      diff: serialized.length - props.modelValue.length
+    })
+    emit('update:modelValue', serialized)
+  } else {
+    console.log('[LatexRenderer] Content unchanged, skipping update')
+  }
 }
 </script>
 
