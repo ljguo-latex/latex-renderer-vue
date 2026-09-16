@@ -21,6 +21,7 @@ defineProps({
   align-items: center;
   gap: 0.12em;
   vertical-align: 0.08em;
+  margin-left: 0.25em;
   white-space: nowrap;
   flex-shrink: 0;
 }
