@@ -78,7 +78,6 @@ Readonly rendering:
 - `processors?: Array`
 - `inlineCommands?: Record<string, { name: string, component: Component }>`
 - `imageSrcResolver?: ({ src, node }) => string | Promise<string>`
-- `theme?: { color?: string, textColor?: string }`
 
 Emits:
 
@@ -107,39 +106,115 @@ function imageSrcResolver({ src }) {
 </template>
 ```
 
-Theme example:
+### Colors and typography
+
+The renderer inherits text color from its parent. Set `color` on a wrapper or
+pass a standard `class` / `style` to `LatexRenderer`. Text, math, list labels,
+brackets, blank underlines, and circled numbers follow that color; borders and
+image editing accents use `currentColor`. Explicit LaTeX color commands such as
+`\textcolor{red}{...}` and `\color{blue}` retain their specified colors, including
+nested text and formulas.
 
 ```vue
-<script setup>
-import LatexRenderer from 'latex-renderer-vue'
-
-const theme = {
-  color: '#0f766e',
-  textColor: '#182025',
-}
-</script>
-
 <template>
-  <LatexRenderer
-    :model-value="latex"
-    :theme="theme"
-  />
+  <div style="color: #182025">
+    <LatexRenderer :model-value="latex" />
+  </div>
 </template>
 ```
 
-`theme.color` is used by:
+The `theme` prop and its color variables have been removed. Migrate `theme.color`
+and `theme.textColor` to CSS `color`, and `theme.fontFamily` / `theme.fontSize` to
+CSS `font-family` / `font-size`. The existing `--latex-renderer-font-family` and
+`--latex-renderer-font-size` CSS variables remain available.
 
-- image toolbar active state
-- choices labels
-- enumerate labels
-- `\paren` brackets
-- `\blank` underline
+### MathJax loading
 
-`theme.textColor` controls normal rendered text and MathJax text.
+MathJax is loaded on demand from the pinned MathJax **4.1.3** CDN distribution,
+with matching pinned STIX2 and chemistry font resources.
+Multiple renderer instances share one loading promise. Initialization waits for
+`startup.promise`, times out after 30 seconds, and allows a later load to retry
+if loading fails. Failed scripts created by this library are removed; host-owned
+scripts and configuration are never removed or overwritten.
+
+For application-wide configuration, call `configureMathJax()` **before** mounting
+any renderer or calling `loadMathJax()`:
+
+```js
+import { configureMathJax, loadMathJax } from 'latex-renderer-vue'
+
+configureMathJax({
+  // Optional: use your own complete MathJax 4 distribution.
+  // src: '/vendor/mathjax/tex-chtml.js',
+  timeout: 30000,
+  config: {
+    tex: {
+      macros: { RR: '\\mathbb{R}' },
+      packages: { '[+]': ['bbox'] },
+    },
+    loader: { load: ['[tex]/bbox'] },
+  },
+})
+
+// Optional preloading. Without this call, the first formula triggers loading.
+await loadMathJax()
+```
+
+- `src`: script URL; defaults to
+  `https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-chtml.js`.
+- `timeout`: positive startup timeout in milliseconds; defaults to `30000`.
+- `config`: MathJax configuration. Objects are merged recursively, including
+  custom macros. `loader.load` and `tex.packages['[+]']` extend built-in lists;
+  other arrays replace defaults. `startup.typeset` is always `false` for a
+  library-owned runtime, so only component containers are typeset.
+- Configuration is locked after the first browser-side loading attempt, including
+  a failed attempt. To retry loading, call `loadMathJax()` again; a new render or
+  content update also retries. No automatic retry loop runs in the background.
+- If the page already has `window.MathJax` or a recognized MathJax script, the
+  library waits for and reuses it. A host configuration alone does **not** cause
+  this library to inject a script: the host must load its runtime. Use
+  `id="mathjax-script"` to identify a host script with a custom filename.
+- Reused runtimes keep the host's configuration, including its automatic
+  typesetting policy. `configureMathJax().config` is only applied to a runtime
+  loaded by this library. The host is responsible for required extensions and
+  macros such as `enclose`, `html`, `color`, `blank`, `paren`, and `circled`.
+- Self-hosting requires the distribution's extensions and font resources as well
+  as the entry script. Configure their paths as needed; copying only
+  `tex-chtml.js` is not enough for an offline deployment.
+
+Rendering batches pending containers, coalesces updates to the same container,
+and clears old MathJax records before replacing content or unmounting. A rendering
+failure falls back to the original LaTeX text. `loadMathJax()` returns `null`
+during SSR; actual typesetting occurs in the browser.
+
+### Waiting before measuring or printing
+
+Use `waitForMathJax(root)` after changing renderer content and before measuring,
+exporting, or printing the DOM. It waits for Vue updates and the latest component
+render requests within `root` (the whole document when omitted), including edits
+queued while it is waiting. A failed current render rejects the promise. Removed
+components and superseded requests do not block it. A subtree without formula
+components resolves without loading MathJax.
+
+```js
+import { waitForMathJax } from 'latex-renderer-vue'
+
+await waitForMathJax(previewElement)
+await document.fonts.ready
+// Wait for images separately, then measure or print previewElement.
+```
+
+`loadMathJax()` only waits for the engine to initialize. Neither it nor
+`mathJax.typesetPromise([])` waits for component work that has not yet reached
+MathJax's own queue. Use the renderer-level wait above for layout-sensitive work.
+Call it again after subsequent edits; it does not freeze the document.
 
 ### Named Exports
 
 - `LatexRenderer`
+- `configureMathJax`
+- `loadMathJax`
+- `waitForMathJax`
 - `parseLatex`
 - `serializeLatex`
 - `replaceNode`

@@ -30,9 +30,9 @@ const isDoubleDigit = computed(() => String(props.node.param ?? '').trim().lengt
   width: 1.28em;
   height: 1.28em;
   aspect-ratio: 1 / 1;
-  border: 1px solid var(--latex-renderer-theme-color);
+  border: 1px solid currentColor;
   border-radius: 50%;
-  color: var(--latex-renderer-theme-color);
+  color: inherit;
   font-size: 0.82em;
   line-height: 1;
   vertical-align: middle;

@@ -26,7 +26,7 @@ defineProps({
 }
 
 .paren-command__mark {
-  color: var(--latex-renderer-theme-color);
+  color: inherit;
   font-size: 1.15em;
   line-height: 1;
   font-weight: 600;

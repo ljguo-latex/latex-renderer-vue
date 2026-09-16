@@ -17,7 +17,7 @@ defineProps({
   min-width: 4.5em;
   height: 0;
   vertical-align: baseline;
-  border-bottom: 2px solid var(--latex-renderer-theme-color);
+  border-bottom: 2px solid currentColor;
   white-space: nowrap;
   flex-shrink: 0;
 }

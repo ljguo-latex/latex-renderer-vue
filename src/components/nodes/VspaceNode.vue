@@ -30,7 +30,7 @@ const fallbackText = computed(() => props.node.original || `\\vspace{${props.nod
 }
 
 .vspace-node__fallback {
-  color: var(--latex-renderer-text-color);
+  color: inherit;
   white-space: pre-wrap;
 }
 </style>

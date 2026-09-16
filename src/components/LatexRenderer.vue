@@ -28,10 +28,6 @@ const props = defineProps({
     type: Function,
     default: () => IDENTITY_IMAGE_SRC_RESOLVER,
   },
-  theme: {
-    type: Object,
-    default: () => ({}),
-  },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -39,19 +35,6 @@ const emit = defineEmits(['update:modelValue'])
 const activeProcessors = computed(() => props.processors)
 const processorRegistry = computed(() => createProcessorRegistry(activeProcessors.value))
 const nodes = computed(() => parseLatex(props.modelValue, activeProcessors.value))
-const themeStyles = computed(() => {
-  const styles = {
-    '--latex-renderer-theme-color': props.theme?.color || '#000000',
-    '--latex-renderer-text-color': props.theme?.textColor || '#182025',
-  }
-  if (props.theme?.fontFamily) {
-    styles['--latex-renderer-font-family'] = props.theme.fontFamily
-  }
-  if (props.theme?.fontSize) {
-    styles['--latex-renderer-font-size'] = props.theme.fontSize
-  }
-  return styles
-})
 
 provide(INLINE_COMMAND_HANDLERS_KEY, computed(() => props.inlineCommands))
 provide(IMAGE_SRC_RESOLVER_KEY, computed(() => props.imageSrcResolver))
@@ -69,7 +52,7 @@ function handleNodeUpdate(nextNode) {
 </script>
 
 <template>
-  <div class="latex-renderer" :style="themeStyles">
+  <div class="latex-renderer">
     <template v-for="node in nodes" :key="node.id">
       <component
         :is="processorRegistry.get(node.type)?.component"
@@ -83,7 +66,7 @@ function handleNodeUpdate(nextNode) {
 
 <style scoped>
 .latex-renderer {
-  font-family: var(--latex-renderer-font-family);
-  font-size: var(--latex-renderer-font-size);
+  font-family: var(--latex-renderer-font-family, inherit);
+  font-size: var(--latex-renderer-font-size, inherit);
 }
 </style>

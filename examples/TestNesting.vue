@@ -9,7 +9,11 @@ const CASE_NUMERALS = ['一', '二', '三', '四', '五', '六', '七', '八', '
 const TEST_CASE_HEADING_PATTERN = /^测试用例\s+[^：:\n]+[：:]\s*(.*)$/gm
 
 const testNesting = ref(String.raw`测试：Enumerate 和 Choices 嵌套支持
+
 $q = \paren{}$
+
+
+已知集合 $A=\{1,2,a^{2}\}$, $B=\{1,a+2\}$, 若 $B\subseteq A$, 则 $a$ 的取值是\paren{}
 
 \textcolor{red}{\textbf{test}}
 \textbf{\textcolor{red}{{test}}}
@@ -606,7 +610,6 @@ const colorAssertions = computed(() => [
           <div class="test-case__preview">
             <LatexRenderer
               :model-value="testCase.latex"
-              :theme="{ color: '#1f5c8f', textColor: '#000' }"
               :image-src-resolver="imageSrcResolver"
               :editable-images="true"
               @update:model-value="handleCaseUpdate(index, $event)"

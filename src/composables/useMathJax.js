@@ -1,140 +1,137 @@
+import { nextTick } from 'vue'
 import { rewriteInlineCommandsInText } from '../latex/mathTextCommands.js'
+import { loadMathJax } from './mathJaxLoader.js'
 
-let mathJaxPromise
+export { configureMathJax, loadMathJax } from './mathJaxLoader.js'
 
-function createMathJaxConfig(resolve) {
-  return {
-    output: {
-      font: 'mathjax-stix2',
-    },
-    chtml: {
-      scale: 1.0,
-      minScale: 0.5,
-      mathmlSpacing: false,
-      mtextInheritFont: true,
-    },
-    loader: {
-      load: [
-        '[tex]/mhchem',
-        '[tex]/extpfeil',
-        '[tex]/enclose',
-        '[tex]/color',
-        '[tex]/html',
-        '[tex]/mathtools',
-        '[tex]/cancel',
-        '[tex]/physics',
-        '[tex]/boldsymbol',
-        '[tex]/upgreek',
-      ],
-    },
-    tex: {
-      inlineMath: [
-        ['$', '$'],
-        ['\\(', '\\)'],
-      ],
-      displayMath: [
-        ['$$', '$$'],
-        ['\\[', '\\]'],
-      ],
-      packages: { '[+]': [
-          'mhchem',
-          'extpfeil',
-          'enclose',
-          'color',
-          'html',
-          'mathtools',
-          'cancel',
-          'physics',
-          'boldsymbol',
-          'upgreek',
-        ]
-      },
-      macros: {
-        overarc: ['\\overset{\\Large\\frown}{#1}', 1],
-        circled: ['\\class{math-circled}{\\enclose{circle}{#1}}', 1],
-        paren: ['\\style{color: var(--latex-renderer-theme-color); font-size: 1.15em;}{\\text{\\textbf{(}}\\qquad\\text{\\textbf{)}}}', 0],
-        blank: ['\\class{math-blank-rule}{\\rule[-0.15em]{4.5em}{2px}}', 0],
-        frac: ['{\\displaystyle{#1\\over#2}}', 2],
-      },
-      processEscapes: true,
-      processEnvironments: true,
-      processRefs: true,
-      digits: /^(?:[0-9]+(?:\{,\}[0-9]{3})*(?:\.[0-9]*)?|\.[0-9]+)/,
-      tags: 'none',
-      tagSide: 'right',
-      tagIndent: '0.8em',
-      useLabelIds: true,
-      maxMacros: 1000,
-      maxBuffer: 5 * 1024,
-      formatError: (jax, error) => jax.formatError(error),
-    },
-    options: {
-      skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'input', 'pre', 'head'],
-      includeHtmlTags: {
-        br: '\n',
-        wbr: '',
-        '#comment': '',
-      },
-    },
-    enableMenu: false,
-    startup: {
-      ready: () => {
-        const mathJax = window.MathJax
+const states = new WeakMap()
+const pending = new Set()
+let scheduled = false
+let running = false
 
-        mathJax.startup.defaultReady()
-        resolve(mathJax)
-      },
-    },
-  }
+function whenReady(mathJax, action) {
+  // v4 coordinates DOM changes with host-side typesetting, too.
+  return Promise.resolve().then(() => mathJax?.whenReady ? mathJax.whenReady(action) : action())
 }
 
-export function loadMathJax() {
-  if (typeof window === 'undefined') {
-    return Promise.resolve(null)
-  }
+function takePending() {
+  const jobs = [...pending].filter((state) => !state.disposed)
+    .map((state) => ({ state, request: state.latest }))
+  pending.clear()
+  return jobs
+}
 
-  if (window.MathJax?.typesetPromise) {
-    return Promise.resolve(window.MathJax)
-  }
-
-  if (!mathJaxPromise) {
-    mathJaxPromise = new Promise((resolve, reject) => {
-      window.MathJax = createMathJaxConfig(resolve)
-
-      const existingScript = document.getElementById('mathjax-script')
-
-      if (existingScript) {
-        existingScript.addEventListener('error', () => reject(new Error('MathJax failed to load.')), {
-          once: true,
+async function flush() {
+  scheduled = false
+  if (running) return
+  running = true
+  try {
+    while (pending.size) {
+      let mathJax
+      let jobs = []
+      let failure
+      try {
+        mathJax = await loadMathJax()
+        await whenReady(mathJax, () => {
+          // Capture after startup, so edits during loading collapse to the latest content.
+          jobs = takePending()
+          for (const { state, request } of jobs) {
+            state.mathJax = mathJax
+            mathJax?.typesetClear?.([state.element])
+            state.element.textContent = rewriteInlineCommandsInText(request.latex)
+          }
         })
-        return
+        if (jobs.length) {
+          await mathJax?.typesetPromise(jobs.map(({ state }) => state.element))
+        }
+      } catch (error) {
+        failure = error
+        // A load failure occurs before the pending elements have been captured.
+        if (!jobs.length) jobs = takePending()
       }
 
-      const script = document.createElement('script')
-      script.id = 'mathjax-script'
-      script.async = true
-      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js'
-      script.addEventListener('error', () => reject(new Error('MathJax failed to load.')), { once: true })
-      document.head.appendChild(script)
-    })
+      // Do not mutate a container while MathJax (including host calls) is rendering it.
+      await whenReady(mathJax, () => {
+        for (const { state, request } of jobs) {
+          try {
+            if (state.disposed) {
+              // An in-flight typeset may register new MathItems after unmount cleanup.
+              mathJax?.typesetClear?.([state.element])
+            } else if (request === state.latest && failure) {
+              mathJax?.typesetClear?.([state.element])
+              state.element.textContent = request.latex
+            }
+            if (!state.disposed && request === state.latest && failure) request.reject(failure)
+            else request.resolve()
+          } catch (error) {
+            request.reject(error)
+          }
+        }
+      }).catch((error) => {
+        for (const { state, request } of jobs) {
+          if (!state.disposed && request === state.latest) request.reject(error)
+          else request.resolve()
+        }
+      })
+    }
+  } finally {
+    running = false
   }
-
-  return mathJaxPromise
 }
 
-export async function typesetMath(element, latex) {
-  if (!element) {
-    return
+export function typesetMath(element, latex = '') {
+  if (!element) return Promise.resolve()
+  let state = states.get(element)
+  if (!state) {
+    state = { element, disposed: false, latest: null, mathJax: null }
+    states.set(element, state)
   }
-
-  element.textContent = rewriteInlineCommandsInText(latex || '')
-
-  const mathJax = await loadMathJax()
-
-  if (!mathJax?.typesetPromise) {
-    return
+  if (state.disposed) return Promise.resolve()
+  // Superseded callers finish quietly; only the current request can report an error.
+  state.latest?.resolve()
+  const promise = new Promise((resolve, reject) => {
+    state.latest = { latex: latex || '', resolve, reject }
+  })
+  state.latest.promise = promise
+  pending.add(state)
+  if (!scheduled && !running) {
+    scheduled = true
+    queueMicrotask(() => {
+      void flush()
+    })
   }
+  return promise
+}
 
-  mathJax.typesetClear?.([element])
-  await mathJax.typesetPromise([element])
+export function clearMath(element) {
+  const state = states.get(element)
+  if (!state) return
+  state.disposed = true
+  pending.delete(state)
+  state.latest?.resolve()
+  // Called from onBeforeUnmount while the old DOM is still present.
+  state.mathJax?.typesetClear?.([element])
+}
+
+function requestsWithin(root) {
+  const elements = [root, ...root.querySelectorAll('.mathjax-block')]
+  return elements.map((element) => states.get(element))
+    .filter((state) => state && !state.disposed && state.latest)
+    .map((state) => state.latest)
+}
+
+/** Wait for current Vue updates and the latest renderer requests in this subtree. */
+export async function waitForMathJax(root) {
+  if (typeof document === 'undefined') return
+  const scope = root ?? document
+  await nextTick()
+  let requests = requestsWithin(scope)
+  while (true) {
+    await Promise.all(requests.map((request) => request.promise))
+    // Rendering or a concurrent edit can enqueue another Vue update / math request.
+    await nextTick()
+    const current = requestsWithin(scope)
+    if (current.length === requests.length && current.every((request, index) => request === requests[index])) return
+    requests = current
+  }
 }

@@ -30,7 +30,7 @@ export const inlineCommandHandlers = {
     component: ParenCommand,
     minArgs: 0,
     maxArgs: 1,
-    toMath: () => '\\style{color: var(--latex-renderer-theme-color); font-size: 1.15em;}{\\text{\\textbf{(}}\\qquad\\text{\\textbf{)}}}',
+    toMath: () => '\\style{font-size: 1.15em;}{\\text{\\textbf{(}}\\qquad\\text{\\textbf{)}}}',
   },
   circled: {
     name: 'circled',

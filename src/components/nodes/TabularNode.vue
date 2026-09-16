@@ -60,17 +60,17 @@ function cellStyle(column, row, cellIndex) {
   background: transparent;
 }
 .tabular-node::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--latex-renderer-text-color) 15%, transparent);
+  background: color-mix(in srgb, currentColor 15%, transparent);
   border-radius: 3px;
 }
 .tabular-node::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--latex-renderer-text-color) 30%, transparent);
+  background: color-mix(in srgb, currentColor 30%, transparent);
 }
 
 .tabular-node__table {
   border-collapse: collapse;
   table-layout: auto;
-  color: var(--latex-renderer-text-color);
+  color: inherit;
   line-height: 1.8;
 }
 
@@ -79,12 +79,12 @@ function cellStyle(column, row, cellIndex) {
   transition: background-color 0.2s ease;
 }
 .tabular-node__table tr:hover {
-  background-color: color-mix(in srgb, var(--latex-renderer-theme-color) 6%, transparent);
+  background-color: color-mix(in srgb, currentColor 6%, transparent);
 }
 
 .tabular-node__cell {
   /* 柔和的边框颜色 */
-  border: 0 solid color-mix(in srgb, var(--latex-renderer-text-color) 35%, transparent);
+  border: 0 solid color-mix(in srgb, currentColor 35%, transparent);
   /* 增加内边距让表格更舒展 */
   padding: 0.35rem 0.75rem;
   white-space: nowrap;

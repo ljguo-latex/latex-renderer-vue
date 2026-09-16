@@ -97,7 +97,6 @@ $$
       <LatexRenderer
         v-model="latex"
         :editable-images="true"
-        :theme="{ color: '#1f5c8f', textColor: '#182025' }"
         :imageSrcResolver="src => src"
       />
     </section>

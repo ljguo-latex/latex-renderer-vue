@@ -223,7 +223,7 @@ onBeforeUnmount(() => {
 }
 
 .choices-node__label {
-  color: var(--latex-renderer-theme-color);
+  color: inherit;
   font-weight: 500;
   line-height: 1.8;
   white-space: nowrap;

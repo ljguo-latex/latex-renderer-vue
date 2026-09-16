@@ -213,20 +213,12 @@ export interface ImageSrcResolverContext {
 
 export type ImageSrcResolver = (context: ImageSrcResolverContext) => string | Promise<string>
 
-export interface Theme {
-  color?: string
-  textColor?: string
-  fontFamily?: string
-  fontSize?: string
-}
-
 export interface LatexRendererProps {
   modelValue?: string
   editableImages?: boolean
   processors?: Processor[]
   inlineCommands?: InlineCommandHandlers
   imageSrcResolver?: ImageSrcResolver
-  theme?: Theme
 }
 
 export interface LatexRendererEmits {
@@ -235,7 +227,29 @@ export interface LatexRendererEmits {
 
 export const LatexRenderer: DefineComponent<LatexRendererProps, {}, {}, {}, {}, {}, {}, LatexRendererEmits>
 
-export function loadMathJax(): Promise<unknown>
+export interface MathJaxOptions {
+  /** Pinned CDN URL by default; may point to a self-hosted MathJax 4 distribution. */
+  src?: string
+  /** Startup timeout in milliseconds. Default: 30000. */
+  timeout?: number
+  /** MathJax configuration merged with the built-in defaults before startup. */
+  config?: Record<string, unknown>
+}
+
+export interface MathJaxInstance {
+  typesetPromise(elements?: HTMLElement[]): Promise<unknown>
+  typesetClear?(elements?: HTMLElement[]): void
+  whenReady?(action: () => unknown): Promise<unknown>
+  startup?: { promise?: Promise<unknown>; [key: string]: unknown }
+  [key: string]: unknown
+}
+
+export function configureMathJax(options?: MathJaxOptions): void
+export function loadMathJax(): Promise<MathJaxInstance | null>
+/** Wait for current Vue updates and latest renders in root (the document by default).
+ * Rejects if a current render failed. Does not wait for images or document fonts.
+ */
+export function waitForMathJax(root?: ParentNode): Promise<void>
 
 export function parseLatex(input: string, processors?: Processor[]): LatexNode[]
 export function serializeLatex(nodes: LatexNode[], processors?: Processor[]): string

@@ -554,7 +554,7 @@ onBeforeUnmount(() => {
 
 .resizable-image--open .resizable-image__frame,
 .resizable-image--active .resizable-image__frame {
-  outline: 2px solid color-mix(in srgb, var(--latex-renderer-theme-color) 55%, transparent);
+  outline: 2px solid color-mix(in srgb, currentColor 55%, transparent);
   outline-offset: 2px;
 }
 
@@ -578,7 +578,7 @@ onBeforeUnmount(() => {
   place-items: center;
   gap: 0.35rem;
   padding: 1rem;
-  color: #7a2f22;
+  color: inherit;
   background: rgba(249, 226, 222, 0.92);
   text-align: center;
 }
@@ -611,7 +611,7 @@ onBeforeUnmount(() => {
   height: 2rem;
   border-radius: 6px;
   background: transparent;
-  color: #5d6d7e;
+  color: inherit;
   padding: 0;
   cursor: pointer;
   display: flex;
@@ -625,7 +625,7 @@ onBeforeUnmount(() => {
 
 .resizable-image__alignment-button:hover {
   background: rgba(0, 0, 0, 0.04);
-  color: #2c3e50;
+  color: inherit;
 }
 
 .resizable-image__alignment-button:active {
@@ -634,24 +634,25 @@ onBeforeUnmount(() => {
 
 .resizable-image__alignment-button--active {
   background: #ffffff;
-  color: var(--latex-renderer-theme-color);
+  color: inherit;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .resizable-image__alignment-button--active:hover {
   background: #ffffff;
-  color: var(--latex-renderer-theme-color);
+  color: inherit;
 }
 
 .resizable-image__slider-value {
   min-width: 4.2rem;
-  color: #5d6d7e;
+  color: inherit;
   font-size: 0.8rem;
   font-weight: 500;
   white-space: nowrap;
 }
 
 .resizable-image__slider-input {
+  color: inherit;
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
@@ -681,7 +682,7 @@ onBeforeUnmount(() => {
   height: 16px;
   width: 16px;
   border-radius: 50%;
-  border: 2.5px solid var(--latex-renderer-theme-color);
+  border: 2.5px solid currentColor;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
   transition:
     transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275),
@@ -694,7 +695,7 @@ onBeforeUnmount(() => {
 
 .resizable-image__slider-input:active::-webkit-slider-thumb {
   transform: scale(1.25);
-  background-color: var(--latex-renderer-theme-color);
+  background-color: currentColor;
 }
 
 /* Firefox slider styles */
@@ -714,7 +715,7 @@ onBeforeUnmount(() => {
   height: 12px;
   width: 12px;
   border-radius: 50%;
-  border: 2.5px solid var(--latex-renderer-theme-color);
+  border: 2.5px solid currentColor;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
   transition:
     transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275),
@@ -727,7 +728,7 @@ onBeforeUnmount(() => {
 
 .resizable-image__slider-input:active::-moz-range-thumb {
   transform: scale(1.25);
-  background-color: var(--latex-renderer-theme-color);
+  background-color: currentColor;
 }
 
 @media (max-width: 640px) {

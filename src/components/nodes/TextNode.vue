@@ -26,7 +26,7 @@ const previewContent = computed(() =>
 
 <style scoped>
 .text-node {
-  color: var(--latex-renderer-text-color);
+  color: inherit;
   line-height: 1.8;
   word-break: break-word;
   white-space: pre-wrap;

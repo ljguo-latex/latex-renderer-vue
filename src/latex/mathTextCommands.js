@@ -9,7 +9,7 @@ const inlineMathCommandTransforms = {
   },
   paren: {
     args: 0,
-    toMath: () => '\\style{color: var(--latex-renderer-theme-color); font-size: 1.15em;}{\\text{\\textbf{(}}\\qquad\\text{\\textbf{)}}}',
+    toMath: () => '\\style{font-size: 1.15em;}{\\text{\\textbf{(}}\\qquad\\text{\\textbf{)}}}',
   },
   circled: {
     args: 1,
