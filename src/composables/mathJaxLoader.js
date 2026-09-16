@@ -1,4 +1,6 @@
-const DEFAULT_SRC = 'https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-chtml.js'
+// The renderer selects STIX2 explicitly, so avoid downloading the NewCM font
+// bundled in the regular combined component before loading STIX2.
+const DEFAULT_SRC = 'https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-chtml-nofont.js'
 
 let options = { src: DEFAULT_SRC, timeout: 30000, config: {} }
 let loadingStarted = false

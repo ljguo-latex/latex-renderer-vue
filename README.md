@@ -145,7 +145,7 @@ import { configureMathJax, loadMathJax } from 'latex-renderer-vue'
 
 configureMathJax({
   // Optional: use your own complete MathJax 4 distribution.
-  // src: '/vendor/mathjax/tex-chtml.js',
+  // src: '/vendor/mathjax/tex-chtml-nofont.js',
   timeout: 30000,
   config: {
     tex: {
@@ -161,7 +161,7 @@ await loadMathJax()
 ```
 
 - `src`: script URL; defaults to
-  `https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-chtml.js`.
+  `https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-chtml-nofont.js`.
 - `timeout`: positive startup timeout in milliseconds; defaults to `30000`.
 - `config`: MathJax configuration. Objects are merged recursively, including
   custom macros. `loader.load` and `tex.packages['[+]']` extend built-in lists;
@@ -178,9 +178,10 @@ await loadMathJax()
   typesetting policy. `configureMathJax().config` is only applied to a runtime
   loaded by this library. The host is responsible for required extensions and
   macros such as `enclose`, `html`, `color`, `blank`, `paren`, and `circled`.
-- Self-hosting requires the distribution's extensions and font resources as well
-  as the entry script. Configure their paths as needed; copying only
-  `tex-chtml.js` is not enough for an offline deployment.
+- The default `-nofont` component avoids downloading bundled NewCM because the
+  renderer explicitly uses STIX2. Self-hosting requires the distribution's
+  extensions and STIX2 font resources as well as the entry script; copying only
+  `tex-chtml-nofont.js` is not enough for an offline deployment.
 
 Rendering batches pending containers, coalesces updates to the same container,
 and clears old MathJax records before replacing content or unmounting. A rendering

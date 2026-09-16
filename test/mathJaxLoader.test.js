@@ -32,7 +32,7 @@ describe('MathJax loading', () => {
     const first = loadMathJax()
     expect(loadMathJax()).toBe(first)
     expect(document.scripts).toHaveLength(1)
-    expect(document.scripts[0].src).toBe('https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-chtml.js')
+    expect(document.scripts[0].src).toBe('https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-chtml-nofont.js')
     expect(window.MathJax.startup.typeset).toBe(false)
     const runtime = readyOwnedRuntime()
     expect(await first).toBe(runtime)
