@@ -23,14 +23,14 @@ export const inlineCommandHandlers = {
     component: BlankCommand,
     minArgs: 0,
     maxArgs: 1,
-    toMath: () => '\\class{math-blank-rule}{\\rule[-0.15em]{4.5em}{2px}}',
+    toMath: () => '\\class{math-blank-rule}{\\rule[-0.15em]{4.5em}{1px}}',
   },
   paren: {
     name: 'paren',
     component: ParenCommand,
     minArgs: 0,
     maxArgs: 1,
-    toMath: () => '\\style{font-size: 1.15em;}{\\text{\\textbf{(}}\\qquad\\text{\\textbf{)}}}',
+    toMath: () => '\\style{font-size: 1.15em;}{\\text{(}\\qquad\\text{)}}',
   },
   circled: {
     name: 'circled',

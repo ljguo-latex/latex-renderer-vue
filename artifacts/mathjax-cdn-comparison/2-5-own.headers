@@ -1,0 +1,19 @@
+HTTP/2 200 
+etag: "6705b56f6a65bf287b29c0004560c03e"
+content-type: text/plain
+access-control-allow-credentials: true
+access-control-allow-methods: GET,HEAD
+access-control-expose-headers: ETag,Content-Length,x-cos-request-id
+access-control-max-age: 600
+server: tencent-cos
+x-cos-hash-crc64ecma: 14986545751981903108
+x-cos-request-id: NmFhYTJmZThfZmViNDU4NjRfYzQ1ZV9iZWRlYzFk
+last-modified: Wed, 16 Sep 2026 05:49:40 GMT
+content-encoding: gzip
+content-length: 939
+accept-ranges: bytes
+date: Wed, 16 Sep 2026 05:58:06 GMT
+access-control-allow-origin: *
+eo-log-uuid: 4332261664038400835
+eo-cache-status: HIT
+

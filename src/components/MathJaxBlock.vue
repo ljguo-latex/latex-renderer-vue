@@ -71,6 +71,10 @@ watch(
   stroke: currentColor !important;
 }
 
+.mathjax-block :deep(.math-circled) {
+  font-weight: inherit !important;
+}
+
 /* 优化行内数学公式在中文段落中的基线对齐 */
 .mathjax-block :deep(mjx-container[jax="CHTML"]:not([display="true"])) {
   position: relative;

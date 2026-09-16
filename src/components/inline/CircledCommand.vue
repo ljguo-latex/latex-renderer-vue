@@ -34,6 +34,7 @@ const isDoubleDigit = computed(() => String(props.node.param ?? '').trim().lengt
   border-radius: 50%;
   color: inherit;
   font-size: 0.82em;
+  font-weight: inherit;
   line-height: 1;
   vertical-align: middle;
   text-align: center;
@@ -50,5 +51,6 @@ const isDoubleDigit = computed(() => String(props.node.param ?? '').trim().lengt
 .circled-command__digit {
   display: inline-block;
   line-height: 1;
+  font-weight: inherit;
 }
 </style>

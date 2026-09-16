@@ -5,11 +5,11 @@ const textCommandStart = '\\text{'
 const inlineMathCommandTransforms = {
   blank: {
     args: 0,
-    toMath: () => '\\class{math-blank-rule}{\\rule[-0.15em]{4.5em}{2px}}',
+    toMath: () => '\\class{math-blank-rule}{\\rule[-0.15em]{4.5em}{1px}}',
   },
   paren: {
     args: 0,
-    toMath: () => '\\style{font-size: 1.15em;}{\\text{\\textbf{(}}\\qquad\\text{\\textbf{)}}}',
+    toMath: () => '\\style{font-size: 1.15em;}{\\text{(}\\qquad\\text{)}}',
   },
   circled: {
     args: 1,

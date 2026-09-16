@@ -30,7 +30,7 @@ defineProps({
   color: inherit;
   font-size: 1.15em;
   line-height: 1;
-  font-weight: 600;
+  font-weight: inherit;
   user-select: none;
 }
 

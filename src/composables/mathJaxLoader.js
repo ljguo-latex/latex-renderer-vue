@@ -58,8 +58,8 @@ function createMathJaxConfig() {
       macros: {
         overarc: ['\\overset{\\Large\\frown}{#1}', 1],
         circled: ['\\class{math-circled}{\\enclose{circle}{#1}}', 1],
-        paren: ['\\style{font-size: 1.15em;}{\\text{\\textbf{(}}\\qquad\\text{\\textbf{)}}}', 0],
-        blank: ['\\class{math-blank-rule}{\\rule[-0.15em]{4.5em}{2px}}', 0],
+        paren: ['\\style{font-size: 1.15em;}{\\text{(}\\qquad\\text{)}}', 0],
+        blank: ['\\class{math-blank-rule}{\\rule[-0.15em]{4.5em}{1px}}', 0],
         frac: ['{\\displaystyle{#1\\over#2}}', 2],
       },
       processEscapes: true,
