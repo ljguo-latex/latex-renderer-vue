@@ -20,7 +20,7 @@ defineProps({
   display: inline-flex;
   align-items: center;
   gap: 0.12em;
-  vertical-align: middle;
+  vertical-align: 0.08em;
   white-space: nowrap;
   flex-shrink: 0;
 }
