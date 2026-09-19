@@ -59,7 +59,7 @@ function createMathJaxConfig() {
       },
       macros: {
         div: '\\divisionsymbol',
-        parallel: '\\mathrel{/\\mkern-5mu/}',
+        parallel: '\\mathrel{/\\mkern-2.5mu/}',
         overarc: ['\\overset{\\Large\\frown}{#1}', 1],
         circled: ['\\class{math-circled}{\\enclose{circle}{#1}}', 1],
         paren: ['\\style{font-size: 1.15em;}{\\text{(}\\qquad\\text{)}}', 0],
