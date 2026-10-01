@@ -212,6 +212,11 @@ export interface ImageSrcResolverContext {
 }
 
 export type ImageSrcResolver = (context: ImageSrcResolverContext) => string | Promise<string>
+export interface ImageReplacementContext extends ImageSrcResolverContext {
+  file: File
+}
+/** The host owns preview, upload and persistence. Does not change LaTeX or image options. */
+export type ImageReplacer = (context: ImageReplacementContext) => void | Promise<void>
 
 export interface LatexRendererProps {
   modelValue?: string
@@ -219,6 +224,7 @@ export interface LatexRendererProps {
   processors?: Processor[]
   inlineCommands?: InlineCommandHandlers
   imageSrcResolver?: ImageSrcResolver
+  imageReplacer?: ImageReplacer
 }
 
 export interface LatexRendererEmits {

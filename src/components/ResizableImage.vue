@@ -43,9 +43,19 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  replaceable: { type: Boolean, default: false },
+  replacing: { type: Boolean, default: false },
+  replacementError: { type: String, default: '' },
 })
 
-const emit = defineEmits(['commit-width', 'commit-alignment'])
+const emit = defineEmits(['commit-width', 'commit-alignment', 'replace-image'])
+const replacementInput = ref(null)
+
+function selectReplacement(event) {
+  const file = event.target.files?.[0]
+  event.target.value = ''
+  if (file && props.editable && props.replaceable && !props.replacing) emit('replace-image', file)
+}
 
 const naturalWidth = ref(0)
 const naturalHeight = ref(0)
@@ -369,6 +379,14 @@ onBeforeUnmount(() => {
     ]"
   >
     <div v-if="editable" ref="toolbar" class="resizable-image__toolbar">
+      <button
+        v-if="replaceable"
+        type="button"
+        class="resizable-image__replace-button"
+        :disabled="replacing"
+        @click="replacementInput?.click()"
+      >{{ replacing ? '处理中…' : '替换图片' }}</button>
+      <input v-if="replaceable" ref="replacementInput" type="file" accept="image/*" hidden @change="selectReplacement" />
       <div class="resizable-image__alignment">
         <button
           v-for="option in ALIGNMENT_OPTIONS"
@@ -428,6 +446,8 @@ onBeforeUnmount(() => {
       </label>
     </div>
 
+    <div v-if="replacementError && editable" class="resizable-image__replacement-error" role="alert">{{ replacementError }}</div>
+
     <div ref="frame" class="resizable-image__frame" :style="frameStyle" @click="openToolbar">
       <img
         v-if="!hasLoadError"
@@ -447,6 +467,18 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.resizable-image__replace-button {
+  flex-shrink: 0;
+  padding: 0.4rem;
+  border: 1px solid #d8e0eb;
+  border-radius: 6px;
+  background: white;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+}
+.resizable-image__replace-button:disabled { opacity: 0.5; cursor: wait; }
+.resizable-image__replacement-error { color: #b91c1c; font-size: 12px; }
 .resizable-image {
   display: block;
   margin: 0;

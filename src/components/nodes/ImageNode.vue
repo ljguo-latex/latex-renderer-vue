@@ -2,7 +2,7 @@
 import { computed, inject, ref, watch } from 'vue'
 
 import ResizableImage from '../ResizableImage.vue'
-import { IMAGE_SRC_RESOLVER_KEY } from '../../latex/imageContext'
+import { IMAGE_SRC_RESOLVER_KEY, IMAGE_REPLACER_KEY } from '../../latex/imageContext'
 import { updateImageSegmentAlignment, updateImageSegmentWidth } from '../../utils/latex'
 
 const props = defineProps({
@@ -19,6 +19,23 @@ const props = defineProps({
 const emit = defineEmits(['update-node'])
 const imageSrcResolver = inject(IMAGE_SRC_RESOLVER_KEY, computed(() => ({ src }) => src))
 const resolvedSrc = ref(props.node.src)
+const imageReplacer = inject(IMAGE_REPLACER_KEY, computed(() => null))
+const replacing = ref(false)
+const replacementError = ref('')
+
+async function handleReplace(file) {
+  if (!props.editable || !imageReplacer.value || replacing.value) return
+  const context = { src: props.node.src, node: props.node, file }
+  replacing.value = true
+  replacementError.value = ''
+  try {
+    await imageReplacer.value(context)
+  } catch (error) {
+    replacementError.value = error?.message || '图片替换失败，请重试'
+  } finally {
+    replacing.value = false
+  }
+}
 
 let resolutionId = 0
 
@@ -70,6 +87,10 @@ function handleAlignmentCommit({ alignment }) {
     :options="node.options"
     :alignment="node.alignment"
     :editable="editable"
+    :replaceable="Boolean(imageReplacer)"
+    :replacing="replacing"
+    :replacement-error="replacementError"
+    @replace-image="handleReplace"
     @commit-width="handleWidthCommit"
     @commit-alignment="handleAlignmentCommit"
   />

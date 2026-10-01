@@ -78,6 +78,7 @@ Readonly rendering:
 - `processors?: Array`
 - `inlineCommands?: Record<string, { name: string, component: Component }>`
 - `imageSrcResolver?: ({ src, node }) => string | Promise<string>`
+- `imageReplacer?: ({ src, node, file }) => void | Promise<void>`: enables a “替换图片” file picker in editable image toolbars. The host owns validation, preview, upload and save timing. The renderer keeps the original LaTeX filename, width and alignment; replacement errors appear next to the image. Update `imageSrcResolver` to show a local preview or a versioned URL after saving. Omit this prop for existing behavior.
 
 Emits:
 
