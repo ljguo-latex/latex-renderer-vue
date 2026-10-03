@@ -43,12 +43,13 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  processable: { type: Boolean, default: false },
   replaceable: { type: Boolean, default: false },
   replacing: { type: Boolean, default: false },
   replacementError: { type: String, default: '' },
 })
 
-const emit = defineEmits(['commit-width', 'commit-alignment', 'replace-image'])
+const emit = defineEmits(['commit-width', 'commit-alignment', 'replace-image', 'edit-image'])
 const replacementInput = ref(null)
 
 function selectReplacement(event) {
@@ -386,7 +387,9 @@ onBeforeUnmount(() => {
         :disabled="replacing"
         @click="replacementInput?.click()"
       >{{ replacing ? '处理中…' : '替换图片' }}</button>
-      <input v-if="replaceable" ref="replacementInput" type="file" accept="image/*" hidden @change="selectReplacement" />
+      <button v-if="processable" type="button" class="resizable-image__replace-button"
+        :disabled="replacing" @click="emit('edit-image')">抠图 / 线稿</button>
+      <input v-if="replaceable" ref="replacementInput" type="file" accept="image/png,image/jpeg" hidden @change="selectReplacement" />
       <div class="resizable-image__alignment">
         <button
           v-for="option in ALIGNMENT_OPTIONS"

@@ -2,7 +2,7 @@
 import { computed, provide } from 'vue'
 
 import { parseLatex, replaceNodeDeep, serializeLatex } from '../latex/core'
-import { IDENTITY_IMAGE_SRC_RESOLVER, IMAGE_SRC_RESOLVER_KEY, IMAGE_REPLACER_KEY } from '../latex/imageContext'
+import { IDENTITY_IMAGE_SRC_RESOLVER, IMAGE_SRC_RESOLVER_KEY, IMAGE_REPLACER_KEY, IMAGE_EDITOR_KEY } from '../latex/imageContext'
 import { inlineCommandHandlers as defaultInlineCommandHandlers } from '../latex/inline/commands'
 import { INLINE_COMMAND_HANDLERS_KEY } from '../latex/inline/context'
 import { createProcessorRegistry, defaultProcessors } from '../latex/processors'
@@ -28,6 +28,7 @@ const props = defineProps({
     type: Function,
     default: () => IDENTITY_IMAGE_SRC_RESOLVER,
   },
+  imageEditor: { type: Function, default: null },
   imageReplacer: {
     type: Function,
     default: null,
@@ -43,6 +44,7 @@ const nodes = computed(() => parseLatex(props.modelValue, activeProcessors.value
 provide(INLINE_COMMAND_HANDLERS_KEY, computed(() => props.inlineCommands))
 provide(IMAGE_SRC_RESOLVER_KEY, computed(() => props.imageSrcResolver))
 provide(IMAGE_REPLACER_KEY, computed(() => props.imageReplacer))
+provide(IMAGE_EDITOR_KEY, computed(() => props.imageEditor))
 provide('latex-processors', activeProcessors)
 
 function handleNodeUpdate(nextNode) {

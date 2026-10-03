@@ -218,6 +218,10 @@ export interface ImageReplacementContext extends ImageSrcResolverContext {
 /** The host owns preview, upload and persistence. Does not change LaTeX or image options. */
 export type ImageReplacer = (context: ImageReplacementContext) => void | Promise<void>
 
+export interface ImageEditorContext extends ImageSrcResolverContext { url: string }
+/** Opens a host-owned image processing tool. Does not update LaTeX automatically. */
+export type ImageEditor = (context: ImageEditorContext) => void | Promise<void>
+
 export interface LatexRendererProps {
   modelValue?: string
   editableImages?: boolean
@@ -225,6 +229,7 @@ export interface LatexRendererProps {
   inlineCommands?: InlineCommandHandlers
   imageSrcResolver?: ImageSrcResolver
   imageReplacer?: ImageReplacer
+  imageEditor?: ImageEditor
 }
 
 export interface LatexRendererEmits {

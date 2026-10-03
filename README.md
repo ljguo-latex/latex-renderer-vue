@@ -336,3 +336,10 @@ pnpm build:demo
 - `pnpm build` builds the package library
 - `pnpm build:demo` builds the local demo page
 - the demo page lives in `examples/App.vue`
+
+### Image processing toolbar
+
+Pass `imageEditor({ src, node, url })` with `editableImages` to show the optional
+“抠图 / 线稿” action. `src` is the original LaTeX key and `url` is the resolved
+preview URL. The host opens its processing UI and owns pending files, upload
+and persistence. No callback is invoked in read-only mode.
