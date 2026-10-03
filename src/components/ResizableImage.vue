@@ -380,16 +380,44 @@ onBeforeUnmount(() => {
     ]"
   >
     <div v-if="editable" ref="toolbar" class="resizable-image__toolbar">
-      <button
-        v-if="replaceable"
-        type="button"
-        class="resizable-image__replace-button"
-        :disabled="replacing"
-        @click="replacementInput?.click()"
-      >{{ replacing ? '处理中…' : '替换图片' }}</button>
-      <button v-if="processable" type="button" class="resizable-image__replace-button"
-        :disabled="replacing" @click="emit('edit-image')">抠图 / 线稿</button>
+      <div v-if="replaceable || processable" class="resizable-image__actions">
+        <button
+          v-if="replaceable"
+          type="button"
+          class="resizable-image__action-button"
+          :disabled="replacing"
+          title="替换当前图片"
+          @click="replacementInput?.click()"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 2v6h-6"></path>
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+            <path d="M3 22v-6h6"></path>
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+          </svg>
+          <span>{{ replacing ? '处理中…' : '替换图片' }}</span>
+        </button>
+        <button
+          v-if="processable"
+          type="button"
+          class="resizable-image__action-button"
+          :disabled="replacing"
+          title="黑白线稿一键去底与线条增强"
+          @click="emit('edit-image')"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 3-1.9 4.4L5.7 9l4.4 1.9L12 15.3l1.9-4.4L18.3 9l-4.4-1.6L12 3z"></path>
+            <path d="M19 15l-1 2.2-2.2 1 2.2 1 1 2.2 1-2.2 2.2-1-2.2-1-1-2.2z"></path>
+            <path d="M5 16l-.7 1.5-1.5.7 1.5.7.7 1.5.7-1.5 1.5-.7-1.5-.7-.7-1.5z"></path>
+          </svg>
+          <span>抠图 / 线稿</span>
+        </button>
+      </div>
+
       <input v-if="replaceable" ref="replacementInput" type="file" accept="image/png,image/jpeg" hidden @change="selectReplacement" />
+
+      <div v-if="(replaceable || processable) && ALIGNMENT_OPTIONS.length" class="resizable-image__divider" />
+
       <div class="resizable-image__alignment">
         <button
           v-for="option in ALIGNMENT_OPTIONS"
@@ -429,6 +457,8 @@ onBeforeUnmount(() => {
           </svg>
         </button>
       </div>
+
+      <div class="resizable-image__divider" />
 
       <label class="resizable-image__slider">
         <span class="resizable-image__slider-value">{{ widthLabel }}</span>
@@ -470,17 +500,72 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.resizable-image__replace-button {
+.resizable-image__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   flex-shrink: 0;
-  padding: 0.4rem;
-  border: 1px solid #d8e0eb;
+}
+
+.resizable-image__action-button,
+.resizable-image__replace-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 2rem;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(18, 33, 48, 0.08);
   border-radius: 6px;
-  background: white;
+  background: rgba(255, 255, 255, 0.9);
   color: inherit;
   cursor: pointer;
   font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: all 0.15s ease;
+  user-select: none;
 }
-.resizable-image__replace-button:disabled { opacity: 0.5; cursor: wait; }
+
+.resizable-image__action-button svg {
+  flex-shrink: 0;
+  opacity: 0.75;
+  transition: opacity 0.15s ease;
+}
+
+.resizable-image__action-button:hover:not(:disabled),
+.resizable-image__replace-button:hover:not(:disabled) {
+  background: #ffffff;
+  border-color: rgba(18, 33, 48, 0.18);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.resizable-image__action-button:hover:not(:disabled) svg {
+  opacity: 1;
+}
+
+.resizable-image__action-button:active:not(:disabled),
+.resizable-image__replace-button:active:not(:disabled) {
+  transform: scale(0.97);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.resizable-image__action-button:disabled,
+.resizable-image__replace-button:disabled {
+  opacity: 0.45;
+  cursor: wait;
+}
+
+.resizable-image__divider {
+  width: 1px;
+  height: 1.2rem;
+  background: rgba(18, 33, 48, 0.1);
+  margin: 0 1px;
+  flex-shrink: 0;
+}
+
 .resizable-image__replacement-error { color: #b91c1c; font-size: 12px; }
 .resizable-image {
   display: block;
@@ -530,23 +615,25 @@ onBeforeUnmount(() => {
   z-index: 3;
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  width: min(520px, calc(100vw - 3rem));
-  padding: 0.4rem 0.6rem;
+  gap: 0.5rem;
+  width: max-content;
+  max-width: min(560px, calc(100vw - 2rem));
+  padding: 0.35rem 0.55rem;
   border: 1px solid rgba(18, 33, 48, 0.08);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(12px) saturate(180%);
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
   box-shadow:
-    0 12px 30px -10px rgba(18, 27, 34, 0.12),
-    0 1px 3px rgba(18, 27, 34, 0.04);
+    0 8px 24px -4px rgba(18, 27, 34, 0.12),
+    0 2px 6px -1px rgba(18, 27, 34, 0.05);
   opacity: 0;
   transform: translateY(6px);
   pointer-events: none;
   transition:
     opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
     transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
 }
 
 .resizable-image--toolbar-bottom .resizable-image__toolbar {
@@ -679,10 +766,11 @@ onBeforeUnmount(() => {
 }
 
 .resizable-image__slider-value {
-  min-width: 4.2rem;
+  min-width: 3.8rem;
   color: inherit;
   font-size: 0.8rem;
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
