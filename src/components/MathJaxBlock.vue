@@ -8,6 +8,7 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  pinyinOptions: { type: Object, default: () => ({}) },
 })
 
 const root = ref(null)
@@ -18,7 +19,7 @@ let renderId = 0
 async function renderMath() {
   const currentId = ++renderId
   try {
-    await typesetMath(root.value, props.content)
+    await typesetMath(root.value, props.content, props.pinyinOptions)
     if (currentId === renderId) hasRenderError.value = false
   } catch (error) {
     if (currentId !== renderId) return
@@ -38,11 +39,11 @@ onMounted(() => {
 })
 
 watch(
-  () => props.content,
+  () => [props.content, props.pinyinOptions],
   () => {
     renderMath()
   },
-  { flush: 'post' },
+  { flush: 'post', deep: true },
 )
 </script>
 

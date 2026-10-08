@@ -22,7 +22,7 @@ export default defineConfig(({ mode }) => {
             cssFileName: 'style',
           },
           rollupOptions: {
-            external: ['vue'],
+            external: ['vue', 'pinyin-pro'],
             output: {
               globals: {
                 vue: 'Vue',

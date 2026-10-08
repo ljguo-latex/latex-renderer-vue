@@ -10,12 +10,14 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  context: { type: Object, default: () => ({}) },
+  nodes: { type: Array, default: null },
 })
 
 const injectedHandlers = inject(INLINE_COMMAND_HANDLERS_KEY, computed(() => inlineCommandHandlers))
 
 const inlineNodes = computed(() =>
-  parseInlineContent(props.content ?? '', injectedHandlers.value).map((node) =>
+  (props.nodes ?? parseInlineContent(props.content ?? '', injectedHandlers.value, props.context)).map((node) =>
     normalizeInlineNode(node, injectedHandlers.value),
   ),
 )

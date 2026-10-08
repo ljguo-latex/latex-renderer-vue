@@ -2,7 +2,7 @@
 import ContentNode from './ContentNode.vue'
 import TextNode from './TextNode.vue'
 import { formatEnumerateLabel } from '../../latex/enumerateLabel'
-import { inject } from 'vue'
+import { isSimpleTextItem, resolveSimpleTextItem } from '../../latex/itemParser.js'
 
 const props = defineProps({
   node: {
@@ -15,31 +15,7 @@ const props = defineProps({
   },
 })
 
-const processors = inject('latex-processors', [])
 const emit = defineEmits(['update-node'])
-
-function createTextNode(content, index) {
-  return {
-    id: `${props.node.id}_${index}`,
-    type: 'text',
-    content,
-  }
-}
-
-// 判断是否为简单文本项
-function isSimpleItem(item) {
-  return typeof item === 'string' ||
-    (Array.isArray(item) && item.length === 1 && item[0].type === 'text')
-}
-
-// 提取简单文本内容
-function getSimpleContent(item) {
-  if (typeof item === 'string') return item
-  if (Array.isArray(item) && item.length === 1 && item[0].type === 'text') {
-    return item[0].content
-  }
-  return null
-}
 </script>
 
 <template>
@@ -51,9 +27,9 @@ function getSimpleContent(item) {
 
       <!-- 简单文本项（向后兼容） -->
       <TextNode
-        v-if="isSimpleItem(item)"
+        v-if="isSimpleTextItem(item)"
         class="enumerate-node__content"
-        :node="createTextNode(getSimpleContent(item), index)"
+        :node="resolveSimpleTextItem(item, `${node.id}_${index}`, node.inlineContext)"
       />
 
       <!-- 复杂项（包含嵌套块） -->

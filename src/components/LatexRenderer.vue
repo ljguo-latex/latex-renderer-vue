@@ -5,6 +5,8 @@ import { parseLatex, replaceNodeDeep, serializeLatex } from '../latex/core'
 import { IDENTITY_IMAGE_SRC_RESOLVER, IMAGE_SRC_RESOLVER_KEY, IMAGE_REPLACER_KEY, IMAGE_EDITOR_KEY } from '../latex/imageContext'
 import { inlineCommandHandlers as defaultInlineCommandHandlers } from '../latex/inline/commands'
 import { INLINE_COMMAND_HANDLERS_KEY } from '../latex/inline/context'
+import { resolveDocumentContexts } from '../latex/inline/documentContext.js'
+import { resolvePinyinOptions } from '../latex/pinyin/options.js'
 import { createProcessorRegistry, defaultProcessors } from '../latex/processors'
 
 const props = defineProps({
@@ -24,6 +26,7 @@ const props = defineProps({
     type: Object,
     default: () => defaultInlineCommandHandlers,
   },
+  pinyinOptions: { type: Object, default: () => ({}) },
   imageSrcResolver: {
     type: Function,
     default: () => IDENTITY_IMAGE_SRC_RESOLVER,
@@ -39,7 +42,11 @@ const emit = defineEmits(['update:modelValue'])
 
 const activeProcessors = computed(() => props.processors)
 const processorRegistry = computed(() => createProcessorRegistry(activeProcessors.value))
-const nodes = computed(() => parseLatex(props.modelValue, activeProcessors.value))
+const nodes = computed(() => resolveDocumentContexts(
+  parseLatex(props.modelValue, activeProcessors.value),
+  props.inlineCommands,
+  { pinyinOptions: resolvePinyinOptions(props.pinyinOptions) },
+).nodes)
 
 provide(INLINE_COMMAND_HANDLERS_KEY, computed(() => props.inlineCommands))
 provide(IMAGE_SRC_RESOLVER_KEY, computed(() => props.imageSrcResolver))

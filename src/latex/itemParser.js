@@ -18,5 +18,13 @@ export function parseItemContent(content, processors) {
  * 检查项目内容是否只包含文本节点（无块结构）
  */
 export function isSimpleTextItem(nodes) {
-  return nodes.length === 1 && nodes[0].type === 'text'
+  return typeof nodes === 'string' ||
+    (Array.isArray(nodes) && nodes.length === 1 && nodes[0].type === 'text')
+}
+
+/** Preserve parsed metadata; only legacy string items need a new text node. */
+export function resolveSimpleTextItem(item, id, inlineContext) {
+  return typeof item === 'string'
+    ? { id, type: 'text', content: item, inlineContext }
+    : item[0]
 }

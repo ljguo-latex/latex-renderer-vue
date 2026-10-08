@@ -5,7 +5,9 @@ import HspaceCommand from '../../components/inline/HspaceCommand.vue'
 import InlineMathText from '../../components/inline/InlineMathText.vue'
 import InlineText from '../../components/inline/InlineText.vue'
 import ParenCommand from '../../components/inline/ParenCommand.vue'
+import PinyinCommand from '../../components/inline/PinyinCommand.vue'
 import TextStyleCommand from '../../components/inline/TextStyleCommand.vue'
+import { parsePinyinSetup, resolvePinyinOptions } from '../pinyin/options.js'
 
 function textStyle(name, style) {
   return {
@@ -18,6 +20,16 @@ function textStyle(name, style) {
 }
 
 export const inlineCommandHandlers = {
+  pinyin: { name: 'pinyin', component: PinyinCommand, args: 1 },
+  xpinyinsetup: {
+    name: 'xpinyinsetup',
+    component: () => null,
+    args: 1,
+    updateContext: (context, node) => ({
+      ...context,
+      pinyinOptions: parsePinyinSetup(node.param, resolvePinyinOptions(context.pinyinOptions)),
+    }),
+  },
   blank: {
     name: 'blank',
     component: BlankCommand,

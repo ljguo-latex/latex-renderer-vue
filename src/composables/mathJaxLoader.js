@@ -1,3 +1,5 @@
+import { PINYIN_PACKAGE, registerPinyinExtension } from './mathJaxPinyin.js'
+
 // The renderer selects STIX2 explicitly, so avoid downloading the NewCM font
 // bundled in the regular combined component before loading STIX2.
 const DEFAULT_SRC = 'https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-chtml-nofont.js'
@@ -55,6 +57,7 @@ function createMathJaxConfig() {
           'physics',
           'boldsymbol',
           'upgreek',
+          PINYIN_PACKAGE,
         ]
       },
       macros: {
@@ -138,6 +141,11 @@ function configuredMathJax() {
   }
   // Only explicitly requested component containers should be typeset.
   config.startup.typeset = false
+  const hostReady = config.startup.ready
+  config.startup.ready = () => {
+    registerPinyinExtension(window.MathJax)
+    return hostReady ? hostReady() : window.MathJax.startup.defaultReady()
+  }
   return config
 }
 

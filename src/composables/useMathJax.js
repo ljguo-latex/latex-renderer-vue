@@ -1,6 +1,7 @@
 import { nextTick } from 'vue'
 import { rewriteInlineCommandsInText } from '../latex/mathTextCommands.js'
 import { loadMathJax } from './mathJaxLoader.js'
+import { seedPinyinMath } from './mathJaxPinyin.js'
 
 export { configureMathJax, loadMathJax } from './mathJaxLoader.js'
 
@@ -38,7 +39,7 @@ async function flush() {
           for (const { state, request } of jobs) {
             state.mathJax = mathJax
             mathJax?.typesetClear?.([state.element])
-            state.element.textContent = rewriteInlineCommandsInText(request.latex)
+            state.element.textContent = seedPinyinMath(rewriteInlineCommandsInText(request.latex), request.pinyinOptions)
           }
         })
         if (jobs.length) {
@@ -79,7 +80,7 @@ async function flush() {
   }
 }
 
-export function typesetMath(element, latex = '') {
+export function typesetMath(element, latex = '', pinyinOptions) {
   if (!element) return Promise.resolve()
   let state = states.get(element)
   if (!state) {
@@ -90,7 +91,7 @@ export function typesetMath(element, latex = '') {
   // Superseded callers finish quietly; only the current request can report an error.
   state.latest?.resolve()
   const promise = new Promise((resolve, reject) => {
-    state.latest = { latex: latex || '', resolve, reject }
+    state.latest = { latex: latex || '', pinyinOptions, resolve, reject }
   })
   state.latest.promise = promise
   pending.add(state)

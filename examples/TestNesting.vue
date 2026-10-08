@@ -4,6 +4,7 @@ import { LatexRenderer, defaultProcessors, inlineCommandHandlers, parseLatex, se
 import { parseInlineContent } from '../src/latex/inline/core.js'
 import { parseLatexLength } from '../src/latex/length.js'
 import testImageSrc from './assets/image.png'
+import PinyinDemo from './PinyinDemo.vue'
 
 const CASE_NUMERALS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三', '十四']
 const TEST_CASE_HEADING_PATTERN = /^测试用例\s+[^：:\n]+[：:]\s*(.*)$/gm
@@ -593,6 +594,7 @@ const colorAssertions = computed(() => [
 
 <template>
   <main class="test-nesting">
+    <PinyinDemo />
     <header class="test-nesting__header">
       <h1>嵌套结构测试</h1>
       <p>按用例对照查看 LaTeX 代码与渲染预览，同时保留回归断言。</p>

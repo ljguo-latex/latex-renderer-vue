@@ -22,7 +22,7 @@ const renderContent = computed(() => {
 
 <template>
   <div class="math-environment-node">
-    <MathJaxBlock :content="renderContent" />
+    <MathJaxBlock :content="renderContent" :pinyin-options="node.inlineContext?.pinyinOptions" />
   </div>
 </template>
 

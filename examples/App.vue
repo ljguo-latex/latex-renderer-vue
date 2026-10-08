@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 
 import { LatexRenderer } from '../src/index.js'
+import PinyinDemo from './PinyinDemo.vue'
 
 const demoImageSrc = `data:image/svg+xml;utf8,${encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" width="520" height="240" viewBox="0 0 520 240">
@@ -87,6 +88,7 @@ $$
 
 <template>
   <main class="exam-demo">
+    <PinyinDemo />
     <header class="exam-demo__header">
       <p class="exam-demo__eyebrow">Example</p>
       <h1>正式试卷示例</h1>

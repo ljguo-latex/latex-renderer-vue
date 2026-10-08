@@ -18,7 +18,7 @@ const style = computed(() => (color.value ? { color: color.value } : {}))
 
 <template>
   <span v-if="color" class="color-command" :style="style">
-    <InlineChildren :content="content" />
+    <InlineChildren :content="content" :context="node.context" />
   </span>
   <span v-else class="color-command__fallback">{{ node.raw }}</span>
 </template>

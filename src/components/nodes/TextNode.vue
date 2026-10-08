@@ -20,7 +20,7 @@ const previewContent = computed(() =>
 
 <template>
   <span class="text-node">
-    <InlineChildren :content="previewContent" />
+    <InlineChildren :content="previewContent" :context="node.inlineContext" :nodes="node.inlineNodes" />
   </span>
 </template>
 

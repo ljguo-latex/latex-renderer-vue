@@ -1,8 +1,9 @@
 <script setup>
-import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import ContentNode from './ContentNode.vue'
 import TextNode from './TextNode.vue'
+import { isSimpleTextItem, resolveSimpleTextItem } from '../../latex/itemParser.js'
 
 const LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 
@@ -17,7 +18,6 @@ const props = defineProps({
   },
 })
 
-const processors = inject('latex-processors', [])
 const emit = defineEmits(['update-node'])
 
 const container = ref(null)
@@ -29,28 +29,6 @@ let resizeObserver = null
 let mutationObserver = null
 let measureFrame = null
 
-function createTextNode(content, index, prefix = 'text') {
-  return {
-    id: `${props.node.id}_${prefix}_${index}`,
-    type: 'text',
-    content,
-  }
-}
-
-// 判断是否为简单文本项
-function isSimpleItem(item) {
-  return typeof item === 'string' ||
-    (Array.isArray(item) && item.length === 1 && item[0].type === 'text')
-}
-
-// 提取简单文本内容
-function getSimpleContent(item) {
-  if (typeof item === 'string') return item
-  if (Array.isArray(item) && item.length === 1 && item[0].type === 'text') {
-    return item[0].content
-  }
-  return null
-}
 
 function resolveColumnCount(longestItemWidth, width, itemCount) {
   if (!itemCount || itemCount === 1 || !width || !longestItemWidth) {
@@ -157,9 +135,9 @@ onBeforeUnmount(() => {
 
         <!-- 简单文本项（向后兼容） -->
         <TextNode
-          v-if="isSimpleItem(item)"
+          v-if="isSimpleTextItem(item)"
           class="choices-node__content"
-          :node="createTextNode(getSimpleContent(item), index)"
+          :node="resolveSimpleTextItem(item, `${node.id}_text_${index}`, node.inlineContext)"
         />
 
         <!-- 复杂项（包含嵌套块） -->
@@ -184,9 +162,9 @@ onBeforeUnmount(() => {
 
         <!-- 简单文本项（向后兼容） -->
         <TextNode
-          v-if="isSimpleItem(item)"
+          v-if="isSimpleTextItem(item)"
           class="choices-node__measure-content"
-          :node="createTextNode(getSimpleContent(item), index, 'measure')"
+          :node="resolveSimpleTextItem(item, `${node.id}_measure_${index}`, node.inlineContext)"
         />
 
         <!-- 复杂项（包含嵌套块） -->

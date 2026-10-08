@@ -10,7 +10,7 @@ defineProps({
 </script>
 
 <template>
-  <MathJaxBlock class="inline-math-text" :content="node.content" />
+  <MathJaxBlock class="inline-math-text" :content="node.content" :pinyin-options="node.context?.pinyinOptions" />
 </template>
 
 <style scoped>

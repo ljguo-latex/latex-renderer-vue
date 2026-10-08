@@ -6,5 +6,9 @@ export { parseLatex, prefixNodeIds, replaceNode, replaceNodeDeep, serializeLatex
 export { createProcessorRegistry, defaultProcessors, textProcessor } from './latex/processors'
 export { IMAGE_SRC_RESOLVER_KEY } from './latex/imageContext'
 export { inlineCommandHandlers, normalizeInlineNode } from './latex/inline/commands'
+export { pinyinScopeProcessor } from './latex/processors/pinyinScopeProcessor.js'
+export { createPinyinTokens } from './latex/pinyin/tokens.js'
+export { DEFAULT_PINYIN_OPTIONS, resolvePinyinOptions } from './latex/pinyin/options.js'
+export { registerPinyinExtension } from './composables/mathJaxPinyin.js'
 
 export default LatexRenderer

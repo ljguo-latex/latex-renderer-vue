@@ -20,7 +20,7 @@ const content = computed(() => props.node.args?.[0] ?? '')
 
 <template>
   <span :class="styleClass">
-    <InlineChildren :content="content" />
+    <InlineChildren :content="content" :context="node.context" />
   </span>
 </template>
 

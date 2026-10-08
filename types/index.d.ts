@@ -115,6 +115,14 @@ export interface MathEnvironmentNode {
   original?: string
 }
 
+export interface PinyinScopeNode {
+  id: string
+  type: 'pinyinscope'
+  body: string
+  optionString: string
+  original?: string
+}
+
 export type LatexNode =
   | TextNode
   | ImageNode
@@ -125,6 +133,7 @@ export type LatexNode =
   | MinipageNode
   | TabularNode
   | MathEnvironmentNode
+  | PinyinScopeNode
 
 /* ============================================================
  * Length parsing
@@ -187,6 +196,13 @@ export interface InlineCommandNode {
   raw: string
   start: number
   end: number
+  context?: InlineContext
+}
+
+/** Immutable snapshots carried through commands; declarations return a new context. */
+export interface InlineContext {
+  pinyinOptions?: PinyinOptions
+  [key: string]: unknown
 }
 
 export interface InlineCommandHandler {
@@ -198,6 +214,7 @@ export interface InlineCommandHandler {
   declarationGroup?: boolean
   declarationRest?: boolean
   toMath?: (node: InlineCommandNode) => string
+  updateContext?: (context: InlineContext, node: InlineCommandNode) => InlineContext
 }
 
 export type InlineCommandHandlers = Record<string, InlineCommandHandler>
@@ -227,6 +244,7 @@ export interface LatexRendererProps {
   editableImages?: boolean
   processors?: Processor[]
   inlineCommands?: InlineCommandHandlers
+  pinyinOptions?: PinyinOptions
   imageSrcResolver?: ImageSrcResolver
   imageReplacer?: ImageReplacer
   imageEditor?: ImageEditor
@@ -279,5 +297,26 @@ export function normalizeInlineNode(
 ): InlineCommandNode & { component: Component }
 
 export const IMAGE_SRC_RESOLVER_KEY: InjectionKey<Ref<ImageSrcResolver>>
+
+export interface PinyinOptions {
+  /** Annotation size relative to the base text, from 0.2 to 1. Default: 0.65. */
+  ratio?: number
+  /** Uses the same validated CSS color syntax as textcolor. Default: #0284c7. */
+  color?: string
+  /** Include rp parentheses for browsers without ruby layout. Default: true. */
+  fallback?: boolean
+  /** Alignment of scope lines. Default: center. */
+  align?: 'left' | 'center' | 'right'
+}
+
+export interface PinyinToken { text: string; pinyin?: string }
+/** Returns one reading (or an empty string) per Unicode code point. */
+export type PinyinResolver = (text: string) => string[]
+export const DEFAULT_PINYIN_OPTIONS: Readonly<Required<PinyinOptions>>
+export function resolvePinyinOptions(values?: PinyinOptions): Required<PinyinOptions>
+export function createPinyinTokens(source?: string, resolver?: PinyinResolver): PinyinToken[]
+export const pinyinScopeProcessor: Processor<PinyinScopeNode>
+/** For a host-owned MathJax 4 runtime: call inside startup.ready before defaultReady. */
+export function registerPinyinExtension(mathJax: object): void
 
 export default LatexRenderer

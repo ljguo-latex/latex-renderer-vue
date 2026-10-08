@@ -205,9 +205,10 @@ function skipLiteralArgumentGroups(content, braceIndex) {
 // Scans math segments, registered commands, and bare groups in one pass: the
 // earliest occurrence wins, so `{$x$}` is a group containing math while
 // `$f{x}$` keeps its braces inside the math segment.
-function parseInlineSegments(content, commandPattern, handlers, createId) {
+function parseInlineSegments(content, commandPattern, handlers, createId, initialContext = {}) {
+  let context = initialContext
   if (!content) {
-    return []
+    return { nodes: [], context }
   }
 
   const nodes = []
@@ -217,7 +218,7 @@ function parseInlineSegments(content, commandPattern, handlers, createId) {
 
   const flushText = (end) => {
     if (end > textStart) {
-      nodes.push(createTextNode(content.slice(textStart, end), createId('inline_text')))
+      nodes.push({ ...createTextNode(content.slice(textStart, end), createId('inline_text')), context })
     }
   }
 
@@ -242,10 +243,10 @@ function parseInlineSegments(content, commandPattern, handlers, createId) {
 
     if (mathStart < commandStart && mathStart < braceStart) {
       flushText(mathStart)
-      nodes.push(createMathNode(
+      nodes.push({ ...createMathNode(
         serializeMathSegment(content.slice(mathSegment.start, mathSegment.end), commandPattern, handlers),
         createId('inline_math'),
-      ))
+      ), context })
       cursor = mathSegment.end
       textStart = cursor
       continue
@@ -265,7 +266,7 @@ function parseInlineSegments(content, commandPattern, handlers, createId) {
       }
 
       flushText(braceIndex)
-      nodes.push(...parseInlineSegments(content.slice(braceIndex + 1, groupEnd), commandPattern, handlers, createId))
+      nodes.push(...parseInlineSegments(content.slice(braceIndex + 1, groupEnd), commandPattern, handlers, createId, context).nodes)
       cursor = groupEnd + 1
       textStart = cursor
       continue
@@ -283,16 +284,19 @@ function parseInlineSegments(content, commandPattern, handlers, createId) {
     nodes.push({
       ...commandNode,
       id: createId('inline_command'),
+      context,
     })
+    const updateContext = handlers[commandNode.name]?.updateContext
+    if (updateContext) context = updateContext(context, commandNode)
     cursor = commandNode.end
     textStart = cursor
   }
 
   if (textStart < content.length) {
-    nodes.push(createTextNode(content.slice(textStart), createId('inline_text')))
+    nodes.push({ ...createTextNode(content.slice(textStart), createId('inline_text')), context })
   }
 
-  return nodes
+  return { nodes, context }
 }
 
 function renderCommandInMath(match, handlers = {}) {
@@ -346,18 +350,23 @@ function serializeMathSegment(content, commandPattern, handlers) {
   return output + content.slice(outputCursor)
 }
 
-export function parseInlineContent(content = '', handlersOrNames = {}) {
+export function parseInlineContentWithContext(content = '', handlersOrNames = {}, initialContext = {}) {
   const { handlers, commandNames } = resolveCommandConfig(handlersOrNames)
   const commandPattern = buildCommandPattern(commandNames)
   let count = 0
 
   const createId = (prefix) => `${prefix}_${++count}`
 
-  const nodes = parseInlineSegments(content, commandPattern, handlers, createId)
+  const result = parseInlineSegments(content, commandPattern, handlers, createId, initialContext)
+  const { nodes } = result
 
   if (!nodes.length && !content) {
     nodes.push(createTextNode(content, 'inline_text_1'))
   }
 
-  return nodes
+  return result
+}
+
+export function parseInlineContent(content = '', handlersOrNames = {}, initialContext = {}) {
+  return parseInlineContentWithContext(content, handlersOrNames, initialContext).nodes
 }
