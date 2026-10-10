@@ -301,7 +301,7 @@ export const IMAGE_SRC_RESOLVER_KEY: InjectionKey<Ref<ImageSrcResolver>>
 export interface PinyinOptions {
   /** Annotation size relative to the base text, from 0.2 to 1. Default: 0.65. */
   ratio?: number
-  /** Uses the same validated CSS color syntax as textcolor. Default: #0284c7. */
+  /** Uses the same validated CSS color syntax as textcolor. Default: 'inherit'. */
   color?: string
   /** Include rp parentheses for browsers without ruby layout. Default: true. */
   fallback?: boolean

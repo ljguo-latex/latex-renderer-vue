@@ -2,7 +2,7 @@ import { normalizeColorValue } from '../color.js'
 
 export const DEFAULT_PINYIN_OPTIONS = Object.freeze({
   ratio: 0.65,
-  color: '#0284c7',
+  color: 'inherit',
   fallback: true,
   align: 'center',
 })

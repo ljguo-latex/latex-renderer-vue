@@ -240,14 +240,14 @@ $E=mc^2 \implies \pinyin{质能方程}$
 ```vue
 <LatexRenderer
   :model-value="latex"
-  :pinyin-options="{ ratio: 0.65, color: '#0284c7', fallback: true, align: 'center' }"
+  :pinyin-options="{ ratio: 0.65, color: 'inherit', fallback: true, align: 'center' }"
 />
 ```
 
 | 选项 | 默认值 | 规则 |
 | --- | --- | --- |
 | `ratio` | `0.65` | 拼音相对汉字的字号；有效范围为 `0.2` 到 `1` |
-| `color` | `#0284c7` | 沿用正文颜色校验；支持颜色名、十六进制、RGB/HSL；`inherit` 跟随汉字颜色 |
+| `color` | `inherit` | 默认跟随汉字颜色；支持颜色名、十六进制、RGB/HSL |
 | `fallback` | `true` | 生成 `<rp>` 回退括号；不承诺剪贴板的复制格式 |
 | `align` | `center` | 整段环境的行对齐；支持 `left`、`center`、`right` |
 

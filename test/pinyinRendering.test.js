@@ -39,7 +39,7 @@ describe('pinyin components', () => {
     expect(second.querySelector('rp')).toBeNull()
     source.value = String.raw`\pinyin{中国}`
     await nextTick()
-    expect(first.querySelector('rt').style.color).toBe('rgb(2, 132, 199)')
+    expect(first.querySelector('rt').style.color).toBe('inherit')
     expect(second.querySelector('rt').style.color).toBe('blue')
   })
 
