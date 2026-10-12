@@ -20,7 +20,7 @@ function mount(props = {}) {
   app.mount(root)
   return root
 }
-const button = root => [...root.querySelectorAll('button')].find(item => item.textContent.includes('图片清晰化'))
+const button = root => [...root.querySelectorAll('button')].find(item => item.textContent.includes('清晰化'))
 
 describe('host-owned image enhancement', () => {
   it('hides the action without a callback and in read-only mode', () => {

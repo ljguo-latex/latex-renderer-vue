@@ -66,6 +66,8 @@ const hasLoadError = ref(false)
 const isSliderActive = ref(false)
 const isToolbarOpen = ref(false)
 const toolbarPlacement = ref('top')
+const toolbarShiftX = ref(0)
+const toolbarMaxWidthPx = ref(0)
 const root = ref(null)
 const frame = ref(null)
 const toolbar = ref(null)
@@ -131,6 +133,17 @@ const frameStyle = computed(() => ({
 const toolbarPlacementClass = computed(() =>
   toolbarPlacement.value === 'bottom' ? 'resizable-image--toolbar-bottom' : 'resizable-image--toolbar-top',
 )
+
+const toolbarStyle = computed(() => {
+  const styles = {}
+  if (toolbarShiftX.value) {
+    styles['--toolbar-shift-x'] = `${toolbarShiftX.value}px`
+  }
+  if (toolbarMaxWidthPx.value) {
+    styles['--toolbar-max-width'] = `${toolbarMaxWidthPx.value}px`
+  }
+  return styles
+})
 
 function syncWidthFromProps() {
   if (isSliderActive.value) {
@@ -259,6 +272,7 @@ function handleDocumentPointerDown(event) {
 
   if (!root.value?.contains(event.target)) {
     isToolbarOpen.value = false
+    toolbarShiftX.value = 0
   }
 }
 
@@ -304,6 +318,26 @@ function updateToolbarPlacement() {
   const bottomSpace = visibleBounds.bottom - rootRect.bottom
 
   toolbarPlacement.value = topSpace >= requiredSpace || topSpace >= bottomSpace ? 'top' : 'bottom'
+
+  // 水平边界防遮挡避让计算
+  const padding = 8
+  const visibleLeft = visibleBounds.left + padding
+  const visibleRight = visibleBounds.right - padding
+  const visibleWidth = Math.max(120, Math.floor(visibleRight - visibleLeft))
+  toolbarMaxWidthPx.value = visibleWidth
+
+  const currentShift = toolbarShiftX.value || 0
+  const unshiftedToolbarLeft = toolbarRect.left - currentShift
+  const toolbarWidth = toolbarRect.width
+
+  if (toolbarWidth >= visibleWidth) {
+    toolbarShiftX.value = Math.round(visibleLeft - unshiftedToolbarLeft)
+  } else {
+    const minLeft = visibleLeft
+    const maxLeft = visibleRight - toolbarWidth
+    const clampedLeft = Math.max(minLeft, Math.min(unshiftedToolbarLeft, maxLeft))
+    toolbarShiftX.value = Math.round(clampedLeft - unshiftedToolbarLeft)
+  }
 }
 
 function scheduleToolbarPlacementUpdate() {
@@ -380,7 +414,7 @@ onBeforeUnmount(() => {
       toolbarPlacementClass,
     ]"
   >
-    <div v-if="editable" ref="toolbar" class="resizable-image__toolbar">
+    <div v-if="editable" ref="toolbar" class="resizable-image__toolbar" :style="toolbarStyle">
       <div v-if="replaceable || processable || enhanceable" class="resizable-image__actions">
         <button
           v-if="replaceable"
@@ -396,14 +430,14 @@ onBeforeUnmount(() => {
             <path d="M3 22v-6h6"></path>
             <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
           </svg>
-          <span>{{ replacing ? '处理中…' : '替换图片' }}</span>
+          <span>{{ replacing ? '处理中…' : '替换' }}</span>
         </button>
         <button
           v-if="processable"
           type="button"
           class="resizable-image__action-button"
           :disabled="replacing"
-          title="黑白线稿一键去底与线条增强"
+          title="抠图 / 线稿：黑白线稿一键去底与线条增强"
           @click="emit('edit-image')"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -411,20 +445,20 @@ onBeforeUnmount(() => {
             <path d="M19 15l-1 2.2-2.2 1 2.2 1 1 2.2 1-2.2 2.2-1-2.2-1-1-2.2z"></path>
             <path d="M5 16l-.7 1.5-1.5.7 1.5.7.7 1.5.7-1.5 1.5-.7-1.5-.7-.7-1.5z"></path>
           </svg>
-          <span>抠图 / 线稿</span>
+          <span>抠图</span>
         </button>
         <button
           v-if="enhanceable"
           type="button"
           class="resizable-image__action-button"
           :disabled="replacing"
-          title="提升图片清晰度，宽高放大至 2 倍"
+          title="图片清晰化：提升图片清晰度，宽高放大至 2 倍"
           @click="emit('enhance-image')"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5M8 16l4-8 4 8M9.5 13h5" />
           </svg>
-          <span>图片清晰化</span>
+          <span>清晰化</span>
         </button>
       </div>
 
@@ -529,8 +563,8 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  height: 2rem;
-  padding: 0 0.55rem;
+  height: 1.95rem;
+  padding: 0 0.5rem;
   border: 1px solid rgba(18, 33, 48, 0.08);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.9);
@@ -631,11 +665,11 @@ onBeforeUnmount(() => {
   z-index: 3;
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.35rem;
   width: max-content;
-  max-width: min(740px, calc(100vw - 2rem));
+  max-width: min(740px, var(--toolbar-max-width, calc(100vw - 2rem)));
   flex-wrap: wrap;
-  padding: 0.35rem 0.7rem;
+  padding: 0.3rem 0.6rem;
   border: 1px solid rgba(18, 33, 48, 0.08);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.85);
@@ -645,7 +679,7 @@ onBeforeUnmount(() => {
     0 8px 24px -4px rgba(18, 27, 34, 0.12),
     0 2px 6px -1px rgba(18, 27, 34, 0.05);
   opacity: 0;
-  transform: translateY(6px);
+  transform: translate(var(--toolbar-shift-x, 0px), 6px);
   pointer-events: none;
   transition:
     opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
@@ -656,16 +690,16 @@ onBeforeUnmount(() => {
 .resizable-image--toolbar-bottom .resizable-image__toolbar {
   top: calc(100% + 0.5rem);
   bottom: auto;
-  transform: translateY(-6px);
+  transform: translate(var(--toolbar-shift-x, 0px), -6px);
 }
 
 .resizable-image--center .resizable-image__toolbar {
   left: 50%;
-  transform: translate(-50%, 6px);
+  transform: translate(calc(-50% + var(--toolbar-shift-x, 0px)), 6px);
 }
 
 .resizable-image--center.resizable-image--toolbar-bottom .resizable-image__toolbar {
-  transform: translate(-50%, -6px);
+  transform: translate(calc(-50% + var(--toolbar-shift-x, 0px)), -6px);
 }
 
 .resizable-image--right .resizable-image__toolbar {
@@ -676,13 +710,13 @@ onBeforeUnmount(() => {
 .resizable-image--open .resizable-image__toolbar,
 .resizable-image--active .resizable-image__toolbar {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate(var(--toolbar-shift-x, 0px), 0);
   pointer-events: auto;
 }
 
 .resizable-image--center.resizable-image--open .resizable-image__toolbar,
 .resizable-image--center.resizable-image--active .resizable-image__toolbar {
-  transform: translate(-50%, 0);
+  transform: translate(calc(-50% + var(--toolbar-shift-x, 0px)), 0);
 }
 
 .resizable-image__frame {
@@ -739,16 +773,16 @@ onBeforeUnmount(() => {
 .resizable-image__slider {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  min-width: 140px;
+  gap: 0.45rem;
+  min-width: 105px;
   flex: 1 1 auto;
-  padding-right: 4px;
+  padding-right: 2px;
 }
 
 .resizable-image__alignment-button {
   border: none;
-  width: 2rem;
-  height: 2rem;
+  width: 1.85rem;
+  height: 1.85rem;
   border-radius: 6px;
   background: transparent;
   color: inherit;
@@ -784,9 +818,9 @@ onBeforeUnmount(() => {
 }
 
 .resizable-image__slider-value {
-  min-width: 3.5rem;
+  min-width: 3.2rem;
   color: inherit;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -797,8 +831,8 @@ onBeforeUnmount(() => {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  min-width: 70px;
-  height: 20px;
+  min-width: 55px;
+  height: 18px;
   background: transparent;
   cursor: pointer;
 }
