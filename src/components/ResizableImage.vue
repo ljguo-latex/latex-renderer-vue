@@ -65,6 +65,7 @@ const liveWidthPx = ref(220)
 const hasLoadError = ref(false)
 const isSliderActive = ref(false)
 const isToolbarOpen = ref(false)
+const userPlacement = ref(null)
 const toolbarPlacement = ref('top')
 const toolbarShiftX = ref(0)
 const toolbarMaxWidthPx = ref(0)
@@ -255,6 +256,18 @@ function updateAlignment(alignment) {
   })
 }
 
+function toggleToolbar() {
+  if (!props.editable) {
+    return
+  }
+
+  if (isToolbarOpen.value) {
+    closeToolbar()
+  } else {
+    openToolbar()
+  }
+}
+
 function openToolbar() {
   if (!props.editable) {
     return
@@ -265,14 +278,31 @@ function openToolbar() {
   scheduleToolbarPlacementUpdate()
 }
 
+function closeToolbar() {
+  isToolbarOpen.value = false
+  toolbarShiftX.value = 0
+}
+
+function togglePlacement() {
+  const current = userPlacement.value || toolbarPlacement.value
+  userPlacement.value = current === 'top' ? 'bottom' : 'top'
+  toolbarPlacement.value = userPlacement.value
+  scheduleToolbarPlacementUpdate()
+}
+
+function handleDocumentKeyDown(event) {
+  if (event.key === 'Escape' && isToolbarOpen.value) {
+    closeToolbar()
+  }
+}
+
 function handleDocumentPointerDown(event) {
   if (!props.editable) {
     return
   }
 
   if (!root.value?.contains(event.target)) {
-    isToolbarOpen.value = false
-    toolbarShiftX.value = 0
+    closeToolbar()
   }
 }
 
@@ -311,13 +341,20 @@ function updateToolbarPlacement() {
   }
 
   const rootRect = root.value.getBoundingClientRect()
-  const toolbarRect = toolbar.value.getBoundingClientRect()
+  const toolbarEl = toolbar.value
+  const toolbarRect = toolbarEl.getBoundingClientRect()
+  const toolbarWidth = toolbarEl.offsetWidth || toolbarRect.width
+  const toolbarHeight = toolbarEl.offsetHeight || toolbarRect.height
   const visibleBounds = getVisibleBounds()
-  const requiredSpace = toolbarRect.height + TOOLBAR_GAP_PX
+  const requiredSpace = toolbarHeight + TOOLBAR_GAP_PX
   const topSpace = rootRect.top - visibleBounds.top
   const bottomSpace = visibleBounds.bottom - rootRect.bottom
 
-  toolbarPlacement.value = topSpace >= requiredSpace || topSpace >= bottomSpace ? 'top' : 'bottom'
+  if (userPlacement.value) {
+    toolbarPlacement.value = userPlacement.value
+  } else {
+    toolbarPlacement.value = topSpace >= requiredSpace || topSpace >= bottomSpace ? 'top' : 'bottom'
+  }
 
   // 水平边界防遮挡避让计算
   const padding = 8
@@ -326,18 +363,25 @@ function updateToolbarPlacement() {
   const visibleWidth = Math.max(120, Math.floor(visibleRight - visibleLeft))
   toolbarMaxWidthPx.value = visibleWidth
 
-  const currentShift = toolbarShiftX.value || 0
-  const unshiftedToolbarLeft = toolbarRect.left - currentShift
-  const toolbarWidth = toolbarRect.width
+  // 计算未偏移时工具栏在视口中的基准左侧坐标（依据父容器对齐方式，不受任何 CSS transform 动画干扰）
+  let naturalToolbarLeft = rootRect.left
+  if (props.alignment === 'center') {
+    naturalToolbarLeft = rootRect.left + (rootRect.width - toolbarWidth) / 2
+  } else if (props.alignment === 'right') {
+    naturalToolbarLeft = rootRect.right - toolbarWidth
+  }
 
+  // 严格将工具栏限制在可视区域内（避免向左或向右溢出截断）
+  let targetLeft = naturalToolbarLeft
   if (toolbarWidth >= visibleWidth) {
-    toolbarShiftX.value = Math.round(visibleLeft - unshiftedToolbarLeft)
+    targetLeft = visibleLeft
   } else {
     const minLeft = visibleLeft
     const maxLeft = visibleRight - toolbarWidth
-    const clampedLeft = Math.max(minLeft, Math.min(unshiftedToolbarLeft, maxLeft))
-    toolbarShiftX.value = Math.round(clampedLeft - unshiftedToolbarLeft)
+    targetLeft = Math.max(minLeft, Math.min(naturalToolbarLeft, maxLeft))
   }
+
+  toolbarShiftX.value = Math.round(targetLeft - naturalToolbarLeft)
 }
 
 function scheduleToolbarPlacementUpdate() {
@@ -356,6 +400,7 @@ function scheduleToolbarPlacementUpdate() {
 
 onMounted(() => {
   window.addEventListener('pointerdown', handleDocumentPointerDown)
+  window.addEventListener('keydown', handleDocumentKeyDown)
   window.addEventListener('resize', scheduleToolbarPlacementUpdate)
   window.addEventListener('scroll', scheduleToolbarPlacementUpdate, true)
 
@@ -395,6 +440,7 @@ onBeforeUnmount(() => {
 
   resizeObserver?.disconnect()
   window.removeEventListener('pointerdown', handleDocumentPointerDown)
+  window.removeEventListener('keydown', handleDocumentKeyDown)
   window.removeEventListener('resize', scheduleToolbarPlacementUpdate)
   window.removeEventListener('scroll', scheduleToolbarPlacementUpdate, true)
 })
@@ -525,11 +571,39 @@ onBeforeUnmount(() => {
           @blur="finishSliderInteraction"
         />
       </label>
+
+      <div class="resizable-image__divider" />
+
+      <button
+        type="button"
+        class="resizable-image__icon-button"
+        :title="toolbarPlacement === 'bottom' ? '切换显示在图片上方' : '切换显示在图片下方（避免遮挡文字）'"
+        @click.stop="togglePlacement"
+      >
+        <svg v-if="toolbarPlacement === 'bottom'" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="18 15 12 9 6 15"></polyline>
+        </svg>
+        <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        class="resizable-image__icon-button"
+        title="收起工具栏 (Esc)"
+        @click.stop="closeToolbar"
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
 
     <div v-if="replacementError && editable" class="resizable-image__replacement-error" role="alert">{{ replacementError }}</div>
 
-    <div ref="frame" class="resizable-image__frame" :style="frameStyle" @click="openToolbar">
+    <div ref="frame" class="resizable-image__frame" :style="frameStyle" @click="toggleToolbar">
       <img
         v-if="!hasLoadError"
         class="resizable-image__media"
@@ -608,6 +682,32 @@ onBeforeUnmount(() => {
   cursor: wait;
 }
 
+.resizable-image__icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(18, 33, 48, 0.55);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.resizable-image__icon-button:hover {
+  background: rgba(18, 33, 48, 0.06);
+  color: rgba(18, 33, 48, 0.9);
+  border-color: rgba(18, 33, 48, 0.08);
+}
+
+.resizable-image__icon-button:active {
+  transform: scale(0.95);
+}
+
 .resizable-image__divider {
   width: 1px;
   height: 1.2rem;
@@ -668,11 +768,11 @@ onBeforeUnmount(() => {
   gap: 0.35rem;
   width: max-content;
   max-width: min(740px, var(--toolbar-max-width, calc(100vw - 2rem)));
-  flex-wrap: wrap;
-  padding: 0.3rem 0.6rem;
+  flex-wrap: nowrap;
+  padding: 0.25rem 0.5rem;
   border: 1px solid rgba(18, 33, 48, 0.08);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(14px) saturate(180%);
   -webkit-backdrop-filter: blur(14px) saturate(180%);
   box-shadow:
@@ -681,9 +781,7 @@ onBeforeUnmount(() => {
   opacity: 0;
   transform: translate(var(--toolbar-shift-x, 0px), 6px);
   pointer-events: none;
-  transition:
-    opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.15s ease;
   user-select: none;
 }
 
