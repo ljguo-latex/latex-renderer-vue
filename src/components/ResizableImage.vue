@@ -516,7 +516,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .resizable-image__actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   max-width: 100%;
   align-items: center;
   gap: 4px;
@@ -631,11 +631,11 @@ onBeforeUnmount(() => {
   z-index: 3;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   width: max-content;
-  max-width: min(560px, calc(100vw - 2rem));
+  max-width: min(740px, calc(100vw - 2rem));
   flex-wrap: wrap;
-  padding: 0.35rem 0.55rem;
+  padding: 0.35rem 0.7rem;
   border: 1px solid rgba(18, 33, 48, 0.08);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.85);
@@ -739,9 +739,10 @@ onBeforeUnmount(() => {
 .resizable-image__slider {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
-  min-width: 0;
-  flex: 1;
+  gap: 0.5rem;
+  min-width: 140px;
+  flex: 1 1 auto;
+  padding-right: 4px;
 }
 
 .resizable-image__alignment-button {
@@ -783,7 +784,7 @@ onBeforeUnmount(() => {
 }
 
 .resizable-image__slider-value {
-  min-width: 3.8rem;
+  min-width: 3.5rem;
   color: inherit;
   font-size: 0.8rem;
   font-weight: 500;
@@ -796,7 +797,7 @@ onBeforeUnmount(() => {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  min-width: 0;
+  min-width: 70px;
   height: 20px;
   background: transparent;
   cursor: pointer;
