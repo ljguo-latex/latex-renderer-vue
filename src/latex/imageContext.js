@@ -4,3 +4,4 @@ export const IMAGE_REPLACER_KEY = Symbol('image-replacer')
 export const IDENTITY_IMAGE_SRC_RESOLVER = ({ src }) => src
 
 export const IMAGE_EDITOR_KEY = Symbol('image-editor')
+export const IMAGE_ENHANCER_KEY = Symbol('image-enhancer')

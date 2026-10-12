@@ -44,12 +44,13 @@ const props = defineProps({
     default: false,
   },
   processable: { type: Boolean, default: false },
+  enhanceable: { type: Boolean, default: false },
   replaceable: { type: Boolean, default: false },
   replacing: { type: Boolean, default: false },
   replacementError: { type: String, default: '' },
 })
 
-const emit = defineEmits(['commit-width', 'commit-alignment', 'replace-image', 'edit-image'])
+const emit = defineEmits(['commit-width', 'commit-alignment', 'replace-image', 'edit-image', 'enhance-image'])
 const replacementInput = ref(null)
 
 function selectReplacement(event) {
@@ -380,7 +381,7 @@ onBeforeUnmount(() => {
     ]"
   >
     <div v-if="editable" ref="toolbar" class="resizable-image__toolbar">
-      <div v-if="replaceable || processable" class="resizable-image__actions">
+      <div v-if="replaceable || processable || enhanceable" class="resizable-image__actions">
         <button
           v-if="replaceable"
           type="button"
@@ -412,11 +413,24 @@ onBeforeUnmount(() => {
           </svg>
           <span>抠图 / 线稿</span>
         </button>
+        <button
+          v-if="enhanceable"
+          type="button"
+          class="resizable-image__action-button"
+          :disabled="replacing"
+          title="提升图片清晰度，宽高放大至 2 倍"
+          @click="emit('enhance-image')"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5M8 16l4-8 4 8M9.5 13h5" />
+          </svg>
+          <span>图片清晰化</span>
+        </button>
       </div>
 
       <input v-if="replaceable" ref="replacementInput" type="file" accept="image/png,image/jpeg" hidden @change="selectReplacement" />
 
-      <div v-if="(replaceable || processable) && ALIGNMENT_OPTIONS.length" class="resizable-image__divider" />
+      <div v-if="(replaceable || processable || enhanceable) && ALIGNMENT_OPTIONS.length" class="resizable-image__divider" />
 
       <div class="resizable-image__alignment">
         <button
@@ -502,6 +516,8 @@ onBeforeUnmount(() => {
 <style scoped>
 .resizable-image__actions {
   display: flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
@@ -618,6 +634,7 @@ onBeforeUnmount(() => {
   gap: 0.5rem;
   width: max-content;
   max-width: min(560px, calc(100vw - 2rem));
+  flex-wrap: wrap;
   padding: 0.35rem 0.55rem;
   border: 1px solid rgba(18, 33, 48, 0.08);
   border-radius: 10px;

@@ -453,3 +453,8 @@ Pass `imageEditor({ src, node, url })` with `editableImages` to show the optiona
 “抠图 / 线稿” action. `src` is the original LaTeX key and `url` is the resolved
 preview URL. The host opens its processing UI and owns pending files, upload
 and persistence. No callback is invoked in read-only mode.
+
+Pass `imageEnhancer({ src, node, url })` with `editableImages` to show the optional
+“图片清晰化” action. The host creates the asynchronous task, polls for its result
+and decides when to apply the enhanced image. The renderer does not change the
+LaTeX filename, width or alignment. Omit this prop to hide the action.

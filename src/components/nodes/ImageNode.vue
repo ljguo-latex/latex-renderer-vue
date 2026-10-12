@@ -2,7 +2,7 @@
 import { computed, inject, ref, watch } from 'vue'
 
 import ResizableImage from '../ResizableImage.vue'
-import { IMAGE_SRC_RESOLVER_KEY, IMAGE_REPLACER_KEY, IMAGE_EDITOR_KEY } from '../../latex/imageContext'
+import { IMAGE_SRC_RESOLVER_KEY, IMAGE_REPLACER_KEY, IMAGE_EDITOR_KEY, IMAGE_ENHANCER_KEY } from '../../latex/imageContext'
 import { updateImageSegmentAlignment, updateImageSegmentWidth } from '../../utils/latex'
 
 const props = defineProps({
@@ -21,6 +21,7 @@ const imageSrcResolver = inject(IMAGE_SRC_RESOLVER_KEY, computed(() => ({ src })
 const resolvedSrc = ref(props.node.src)
 const imageReplacer = inject(IMAGE_REPLACER_KEY, computed(() => null))
 const imageEditor = inject(IMAGE_EDITOR_KEY, computed(() => null))
+const imageEnhancer = inject(IMAGE_ENHANCER_KEY, computed(() => null))
 const replacing = ref(false)
 const replacementError = ref('')
 
@@ -50,6 +51,17 @@ async function handleEdit() {
 }
 
 let resolutionId = 0
+
+async function handleEnhance() {
+  if (!props.editable || !imageEnhancer.value || replacing.value) return
+  replacing.value = true
+  replacementError.value = ''
+  try {
+    await imageEnhancer.value({ src: props.node.src, node: props.node, url: resolvedSrc.value })
+  } catch (error) {
+    replacementError.value = error?.message || '图片清晰化工具打开失败'
+  } finally { replacing.value = false }
+}
 
 async function syncResolvedSrc() {
   const currentResolutionId = ++resolutionId
@@ -101,10 +113,12 @@ function handleAlignmentCommit({ alignment }) {
     :editable="editable"
     :replaceable="Boolean(imageReplacer)"
     :processable="Boolean(imageEditor)"
+    :enhanceable="Boolean(imageEnhancer)"
     :replacing="replacing"
     :replacement-error="replacementError"
     @replace-image="handleReplace"
     @edit-image="handleEdit"
+    @enhance-image="handleEnhance"
     @commit-width="handleWidthCommit"
     @commit-alignment="handleAlignmentCommit"
   />
