@@ -8,10 +8,6 @@ export const MAX_WIDTH_CM = 18
 export const MAX_WIDTH_PX = MAX_WIDTH_CM * PX_PER_CM
 export const IMAGE_ALIGNMENTS = ['default', 'left', 'center', 'right']
 
-export function pxToCm(px) {
-  return px / PX_PER_CM
-}
-
 export function cmToPx(cm) {
   return cm * PX_PER_CM
 }
@@ -20,8 +16,15 @@ export function trimNumber(value, digits = 2) {
   return Number(value.toFixed(digits)).toString()
 }
 
-export function formatWidthInCm(px) {
-  return `${trimNumber(pxToCm(px))}cm`
+export const MIN_WIDTH_PERCENT = 5
+export const MAX_WIDTH_PERCENT = 100
+
+export function clampWidthPercent(percent) {
+  return Math.min(MAX_WIDTH_PERCENT, Math.max(MIN_WIDTH_PERCENT, percent))
+}
+
+export function formatWidthAsLinewidth(percent) {
+  return `${trimNumber(clampWidthPercent(percent) / 100)}\\linewidth`
 }
 
 export function clampImageWidthPx(px) {
@@ -53,10 +56,10 @@ export function parseLengthToPx(rawValue) {
   return numericValue
 }
 
-export function updateImageSegmentWidth(segment, widthPx) {
+export function updateImageSegmentWidthPercent(segment, percent) {
   const nextOptions = {
     ...segment.options,
-    width: formatWidthInCm(clampImageWidthPx(widthPx)),
+    width: formatWidthAsLinewidth(percent),
   }
 
   delete nextOptions.height

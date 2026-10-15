@@ -2,13 +2,13 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import {
-  MAX_WIDTH_CM,
   clampImageWidthPx,
-  cmToPx,
-  MIN_WIDTH_CM,
+  clampWidthPercent,
+  MAX_WIDTH_PERCENT,
+  MAX_WIDTH_PX,
+  MIN_WIDTH_PERCENT,
   MIN_WIDTH_PX,
   parseLengthToPx,
-  pxToCm,
   trimNumber,
 } from '../utils/latex'
 import { parseLatexLength } from '../latex/length'
@@ -69,6 +69,8 @@ const userPlacement = ref(null)
 const toolbarPlacement = ref('top')
 const toolbarShiftX = ref(0)
 const toolbarMaxWidthPx = ref(0)
+const containerWidthPx = ref(0)
+const currentPercent = ref(MAX_WIDTH_PERCENT)
 const root = ref(null)
 const frame = ref(null)
 const toolbar = ref(null)
@@ -84,24 +86,14 @@ const relativeWidthFromOptions = computed(() => {
 
   return width.kind === 'relative' || width.kind === 'percent' ? width.css : null
 })
-const relativeWidthLabel = computed(() => {
-  const width = parsedWidthFromOptions.value
-
-  if (width.kind === 'relative' || width.kind === 'percent') {
-    return width.css
-  }
-
-  return ''
-})
 
 const fallbackWidthPx = computed(() => widthFromOptions.value || naturalWidth.value || 220)
+const effectiveContainerWidthPx = computed(() => containerWidthPx.value || MAX_WIDTH_PX)
 
-const widthLabel = computed(() =>
-  relativeWidthLabel.value && !isSliderActive.value ? relativeWidthLabel.value : `${trimNumber(pxToCm(liveWidthPx.value))} cm`,
-)
-const widthSliderValue = computed(() => Number(pxToCm(liveWidthPx.value).toFixed(2)))
-const widthSliderMin = computed(() => MIN_WIDTH_CM)
-const widthSliderMax = computed(() => MAX_WIDTH_CM)
+const widthLabel = computed(() => `${trimNumber(currentPercent.value, 1)}%`)
+const widthSliderValue = computed(() => clampWidthPercent(Math.round(currentPercent.value)))
+const widthSliderMin = computed(() => MIN_WIDTH_PERCENT)
+const widthSliderMax = computed(() => MAX_WIDTH_PERCENT)
 const figureClass = computed(() => {
   const classes = []
 
@@ -164,9 +156,47 @@ function syncRenderedWidthFromFrame() {
   if (renderedWidth > 0) {
     liveWidthPx.value = clampImageWidthPx(renderedWidth)
   }
+
+  syncPercentFromSource()
 }
 
-watch(fallbackWidthPx, syncWidthFromProps, { immediate: true })
+/** 行宽（\linewidth）= 父容器内容宽度，作为百分比滑杆的 100% 基准。 */
+function measureContainerWidth() {
+  const parent = root.value?.parentElement
+  if (!parent) {
+    return
+  }
+
+  const style = window.getComputedStyle(parent)
+  const width = parent.clientWidth -
+    (Number.parseFloat(style.paddingLeft) || 0) -
+    (Number.parseFloat(style.paddingRight) || 0)
+
+  if (width > 0) {
+    containerWidthPx.value = width
+  }
+}
+
+function syncPercentFromSource() {
+  if (isSliderActive.value) {
+    return
+  }
+
+  const relativeCss = relativeWidthFromOptions.value
+
+  currentPercent.value = relativeCss
+    ? (Number.parseFloat(relativeCss) || MAX_WIDTH_PERCENT)
+    : (liveWidthPx.value / effectiveContainerWidthPx.value) * 100
+}
+
+watch(
+  [fallbackWidthPx, effectiveContainerWidthPx, relativeWidthFromOptions],
+  () => {
+    syncWidthFromProps()
+    syncPercentFromSource()
+  },
+  { immediate: true },
+)
 watch(
   () => props.src,
   () => {
@@ -178,7 +208,9 @@ function onImageLoad(event) {
   naturalWidth.value = event.target.naturalWidth
   naturalHeight.value = event.target.naturalHeight
   hasLoadError.value = false
+  measureContainerWidth()
   syncWidthFromProps()
+  syncPercentFromSource()
   nextTick(syncRenderedWidthFromFrame)
   scheduleToolbarPlacementUpdate()
 }
@@ -187,7 +219,7 @@ function onImageError() {
   hasLoadError.value = true
 }
 
-function commitWidth(widthPx) {
+function commitWidth(percent) {
   if (widthCommitTimer) {
     window.clearTimeout(widthCommitTimer)
   }
@@ -195,7 +227,7 @@ function commitWidth(widthPx) {
   widthCommitTimer = window.setTimeout(() => {
     emit('commit-width', {
       id: props.id,
-      widthPx: clampImageWidthPx(widthPx),
+      percent: clampWidthPercent(percent),
     })
     widthCommitTimer = null
   }, WIDTH_COMMIT_DEBOUNCE_MS)
@@ -209,14 +241,15 @@ function flushWidthCommit() {
 
   emit('commit-width', {
     id: props.id,
-    widthPx: clampImageWidthPx(liveWidthPx.value),
+    percent: clampWidthPercent(currentPercent.value),
   })
 }
 
 function updateWidthFromSlider(event) {
-  const nextWidth = Math.max(MIN_WIDTH_PX, clampImageWidthPx(cmToPx(Number(event.target.value))))
+  const percent = clampWidthPercent(Number(event.target.value))
 
-  liveWidthPx.value = nextWidth
+  currentPercent.value = percent
+  liveWidthPx.value = (effectiveContainerWidthPx.value * percent) / 100
   scheduleToolbarPlacementUpdate()
 }
 
@@ -225,9 +258,13 @@ function startSliderInteraction() {
     return
   }
 
-  if (relativeWidthFromOptions.value && frame.value) {
-    liveWidthPx.value = clampImageWidthPx(frame.value.getBoundingClientRect().width || liveWidthPx.value)
-  }
+  measureContainerWidth()
+
+  const relativeCss = relativeWidthFromOptions.value
+  currentPercent.value = relativeCss
+    ? (Number.parseFloat(relativeCss) || MAX_WIDTH_PERCENT)
+    : (liveWidthPx.value / effectiveContainerWidthPx.value) * 100
+  liveWidthPx.value = (effectiveContainerWidthPx.value * clampWidthPercent(currentPercent.value)) / 100
 
   isSliderActive.value = true
   isToolbarOpen.value = true
@@ -240,7 +277,7 @@ function finishSliderInteraction() {
   }
 
   isSliderActive.value = false
-  commitWidth(liveWidthPx.value)
+  commitWidth(currentPercent.value)
 }
 
 function updateAlignment(alignment) {
@@ -398,20 +435,31 @@ function scheduleToolbarPlacementUpdate() {
   })
 }
 
+function handleWindowResize() {
+  measureContainerWidth()
+  syncPercentFromSource()
+  scheduleToolbarPlacementUpdate()
+}
+
 onMounted(() => {
   window.addEventListener('pointerdown', handleDocumentPointerDown)
   window.addEventListener('keydown', handleDocumentKeyDown)
-  window.addEventListener('resize', scheduleToolbarPlacementUpdate)
+  window.addEventListener('resize', handleWindowResize)
   window.addEventListener('scroll', scheduleToolbarPlacementUpdate, true)
 
   if (typeof ResizeObserver !== 'undefined') {
     resizeObserver = new ResizeObserver(() => {
+      measureContainerWidth()
       syncRenderedWidthFromFrame()
+      syncPercentFromSource()
       scheduleToolbarPlacementUpdate()
     })
 
     if (root.value) {
       resizeObserver.observe(root.value)
+      if (root.value.parentElement) {
+        resizeObserver.observe(root.value.parentElement)
+      }
     }
 
     if (toolbar.value) {
@@ -422,6 +470,9 @@ onMounted(() => {
       resizeObserver.observe(frame.value)
     }
   }
+
+  measureContainerWidth()
+  syncPercentFromSource()
 })
 
 onBeforeUnmount(() => {
@@ -441,7 +492,7 @@ onBeforeUnmount(() => {
   resizeObserver?.disconnect()
   window.removeEventListener('pointerdown', handleDocumentPointerDown)
   window.removeEventListener('keydown', handleDocumentKeyDown)
-  window.removeEventListener('resize', scheduleToolbarPlacementUpdate)
+  window.removeEventListener('resize', handleWindowResize)
   window.removeEventListener('scroll', scheduleToolbarPlacementUpdate, true)
 })
 </script>
@@ -561,8 +612,9 @@ onBeforeUnmount(() => {
           type="range"
           :min="widthSliderMin"
           :max="widthSliderMax"
-          step="0.01"
+          step="1"
           :value="widthSliderValue"
+          aria-label="图片宽度（占行宽百分比）"
           @input="updateWidthFromSlider"
           @pointerdown="startSliderInteraction"
           @pointerup="finishSliderInteraction"

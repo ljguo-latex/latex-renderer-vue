@@ -3,7 +3,7 @@ import { computed, inject, ref, watch } from 'vue'
 
 import ResizableImage from '../ResizableImage.vue'
 import { IMAGE_SRC_RESOLVER_KEY, IMAGE_REPLACER_KEY, IMAGE_EDITOR_KEY, IMAGE_ENHANCER_KEY } from '../../latex/imageContext'
-import { updateImageSegmentAlignment, updateImageSegmentWidth } from '../../utils/latex'
+import { updateImageSegmentAlignment, updateImageSegmentWidthPercent } from '../../utils/latex'
 
 const props = defineProps({
   node: {
@@ -95,8 +95,8 @@ watch(
   { immediate: true },
 )
 
-function handleWidthCommit({ widthPx }) {
-  emit('update-node', updateImageSegmentWidth(props.node, widthPx))
+function handleWidthCommit({ percent }) {
+  emit('update-node', updateImageSegmentWidthPercent(props.node, percent))
 }
 
 function handleAlignmentCommit({ alignment }) {
