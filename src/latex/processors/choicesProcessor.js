@@ -5,6 +5,13 @@ import { parseItemContent } from '../itemParser'
 import { splitItems } from '../utils/items.js'
 
 const ITEM_INDENT = '    '
+const LABEL_POSITIONS = new Set(['auto', 'top-left', 'left', 'bottom'])
+
+function parseOptions(optionString = '') {
+  const match = optionString.match(/(?:^|,)\s*label-pos\s*=\s*(?:\{\s*([^{}]*?)\s*\}|([^,]*))/)
+  const labelPos = (match?.[1] ?? match?.[2] ?? '').trim()
+  return LABEL_POSITIONS.has(labelPos) ? { labelPos } : {}
+}
 
 function parseChoiceItems(body = '', processors = [], id = 'choices') {
   const rawItems = splitItems(body)
@@ -27,10 +34,13 @@ export const choicesProcessor = {
       id,
       type: 'choices',
       items: parseChoiceItems(result.body || '', processors, id),
+      options: parseOptions(result.optionString),
       original: result.original,
     }
   },
   serialize(node, { processors = [] } = {}) {
+    const labelPos = node.options?.labelPos
+    const optionBlock = LABEL_POSITIONS.has(labelPos) ? `[label-pos = ${labelPos}]` : ''
     const items = (node.items || [])
       .map((item) => {
         // 处理新格式（节点数组）和旧格式（字符串）
@@ -47,6 +57,6 @@ export const choicesProcessor = {
       })
       .join('\n')
 
-    return `\\begin{choices}\n${items}\n\\end{choices}`
+    return `\\begin{choices}${optionBlock}\n${items}\n\\end{choices}`
   },
 }

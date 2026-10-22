@@ -16,6 +16,7 @@ This repository now uses a real library build:
 - `\includegraphics[...]` image blocks with optional in-place editing and `\linewidth` / `\textwidth` relative widths
 - `choices` environment rendering
   - Automatically uses 4, 2, or 1 columns, including image choices; relative image widths inside `choices` use the full choice-group width and remain stable when the column count changes.
+  - Supports `\begin{choices}[label-pos = bottom]`: `top-left` places labels at the upper left, `left` centers them vertically on the left, and `bottom` centers them below the content. The default `auto` uses bottom labels for the whole group when any option contains an image or its measured content exceeds two text lines, otherwise upper-left labels. Explicit positions override automatic placement. The option is preserved when editing images.
 - `enumerate` environment rendering with label template mapping
 - `\vspace{...}` vertical spacing and `\hspace{...}` inline spacing
 - `\textcolor{...}{...}`, `\color{...}{...}`, and grouped `{\color{...} ...}` inline text color commands

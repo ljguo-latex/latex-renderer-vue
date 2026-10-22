@@ -26,6 +26,13 @@ const measureRoot = ref(null)
 const containerWidth = ref(0)
 const columnCount = ref(1)
 const measuredColumnWidths = ref([])
+const autoLabelPosition = ref('top-left')
+const usesAutoLabelPosition = computed(() => !props.node.options?.labelPos || props.node.options.labelPos === 'auto')
+const labelPosition = computed(() => {
+  const position = props.node.options?.labelPos
+  if (usesAutoLabelPosition.value) return autoLabelPosition.value
+  return ['top-left', 'left', 'bottom'].includes(position) ? position : 'top-left'
+})
 provide(CHOICE_IMAGE_WIDTH_KEY, containerWidth)
 
 let resizeObserver = null
@@ -56,10 +63,26 @@ function updateContainerWidth() {
   containerWidth.value = container.value?.getBoundingClientRect().width || 0
 }
 
-function measureChoices() {
+async function measureChoices() {
   if (!measureRoot.value) {
     columnCount.value = 1
     return
+  }
+
+  if (usesAutoLabelPosition.value) {
+    const label = measureRoot.value.querySelector('.choices-node__label')
+    const style = label ? window.getComputedStyle(label) : null
+    const lineHeight = Number.parseFloat(style?.lineHeight) || (Number.parseFloat(style?.fontSize) || 16) * 1.8
+    const hasTallContent = Array.from(measureRoot.value.querySelectorAll('.choices-node__measure-content'))
+      .some((content) => content.getBoundingClientRect().height > lineHeight * 2)
+    const hasImage = Boolean(measureRoot.value.querySelector('.resizable-image'))
+    const position = hasImage || hasTallContent ? 'bottom' : 'top-left'
+    if (autoLabelPosition.value !== position) {
+      autoLabelPosition.value = position
+      // Measure widths with the same label placement as the visible choices.
+      await nextTick()
+      if (!measureRoot.value) return
+    }
   }
 
   const widths = Array.from(measureRoot.value.querySelectorAll('[data-choice-measure-item]')).map(
@@ -81,7 +104,8 @@ function scheduleMeasure() {
     measureFrame = null
     await nextTick()
     updateContainerWidth()
-    measureChoices()
+    await nextTick()
+    await measureChoices()
   })
 }
 
@@ -101,7 +125,7 @@ const choicesStyle = computed(() => {
 })
 
 watch(
-  () => props.node.items,
+  () => [props.node.items, props.node.options?.labelPos],
   () => {
     scheduleMeasure()
   },
@@ -113,7 +137,6 @@ onMounted(() => {
   scheduleMeasure()
 
   resizeObserver = new ResizeObserver(() => {
-    updateContainerWidth()
     scheduleMeasure()
   })
 
@@ -149,7 +172,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="container" class="choices-node-wrap">
+  <div ref="container" class="choices-node-wrap" :class="`choices-node-wrap--label-${labelPosition}`">
     <ol class="choices-node" :style="choicesStyle">
       <li v-for="(item, index) in node.items" :key="`${node.id}_${index}`" class="choices-node__item">
         <span class="choices-node__label">{{ LABELS[index] || `${index + 1}` }}.</span>
@@ -256,5 +279,30 @@ onBeforeUnmount(() => {
 
 .choices-node__measure-content {
   max-width: none;
+}
+
+.choices-node-wrap--label-left > .choices-node > .choices-node__item,
+.choices-node-wrap--label-left > .choices-node__measure-root > .choices-node__measure-item {
+  align-items: center;
+}
+
+.choices-node-wrap--label-bottom > .choices-node > .choices-node__item,
+.choices-node-wrap--label-bottom > .choices-node__measure-root > .choices-node__measure-item {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  justify-items: center;
+}
+
+.choices-node-wrap--label-bottom > .choices-node > .choices-node__item > .choices-node__label,
+.choices-node-wrap--label-bottom > .choices-node__measure-root > .choices-node__measure-item > .choices-node__label {
+  grid-row: 2;
+  grid-column: 1;
+}
+
+.choices-node-wrap--label-bottom > .choices-node > .choices-node__item > .choices-node__content,
+.choices-node-wrap--label-bottom > .choices-node__measure-root > .choices-node__measure-item > .choices-node__measure-content {
+  grid-row: 1;
+  grid-column: 1;
+  align-self: center;
 }
 </style>

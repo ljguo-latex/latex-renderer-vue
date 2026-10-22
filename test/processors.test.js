@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseLatex, serializeLatex } from '../src/latex/core.js'
+import { parseLatex, replaceNodeDeep, serializeLatex } from '../src/latex/core.js'
 import { defaultProcessors } from '../src/latex/processors/index.js'
 
 function typesOf(nodes) {
@@ -50,6 +50,36 @@ describe('centerProcessor', () => {
 })
 
 describe('choicesProcessor', () => {
+  it.each(['auto', 'top-left', 'left', 'bottom'])('parses and serializes label-pos = %s', (labelPos) => {
+    const latex = `\\begin{choices}[label-pos = ${labelPos}]\\item A\\item B\\end{choices}`
+    const nodes = parseLatex(latex, defaultProcessors)
+    expect(nodes[0].options).toEqual({ labelPos })
+    expect(serializeLatex(nodes, defaultProcessors)).toContain(`[label-pos = ${labelPos}]`)
+  })
+
+  it('accepts braces and whitespace around label-pos values', () => {
+    const nodes = parseLatex(String.raw`\begin{choices}[label-pos = { bottom }]\item A\end{choices}`, defaultProcessors)
+    expect(nodes[0].options.labelPos).toBe('bottom')
+  })
+
+  it('falls back to the existing layout for missing or invalid label-pos', () => {
+    for (const options of ['', '[label-pos = invalid]']) {
+      const nodes = parseLatex(`\\begin{choices}${options}\\item A\\end{choices}`, defaultProcessors)
+      expect(nodes[0].options).toEqual({})
+      expect(serializeLatex(nodes, defaultProcessors)).toContain('\\begin{choices}\n')
+    }
+  })
+
+  it('preserves independent nested label positions after an image edit', () => {
+    const nodes = parseLatex(String.raw`\begin{choices}[label-pos=left]\item \begin{choices}[label-pos=bottom]\item \includegraphics[width=3cm]{a.png}\end{choices}\end{choices}`, defaultProcessors)
+    const image = nodes[0].items[0][0].items[0][0]
+    const updated = replaceNodeDeep(nodes, { ...image, options: { width: '4cm' } })
+    const serialized = serializeLatex(updated, defaultProcessors)
+    expect(serialized).toContain('\\begin{choices}[label-pos = left]')
+    expect(serialized).toContain('\\begin{choices}[label-pos = bottom]')
+    expect(serialized).toContain('\\includegraphics[width=4cm]{a.png}')
+  })
+
   it('splits items and preserves order', () => {
     const latex = '\\begin{choices}\\item a\\item b\\item c\\end{choices}'
     const nodes = parseLatex(latex, defaultProcessors)

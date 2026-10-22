@@ -58,10 +58,15 @@ export interface EnumerateNode {
   original?: string
 }
 
+export interface ChoicesOptions {
+  labelPos?: 'auto' | 'top-left' | 'left' | 'bottom'
+}
+
 export interface ChoicesNode {
   id: string
   type: 'choices'
   items: LatexNode[][]
+  options?: ChoicesOptions
   original?: string
 }
 
