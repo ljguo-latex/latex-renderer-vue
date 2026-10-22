@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import {
   clampImageWidthPx,
@@ -12,6 +12,7 @@ import {
   trimNumber,
 } from '../utils/latex'
 import { parseLatexLength } from '../latex/length'
+import { CHOICE_IMAGE_WIDTH_KEY } from '../latex/imageContext.js'
 
 const WIDTH_COMMIT_DEBOUNCE_MS = 140
 const TOOLBAR_GAP_PX = 8
@@ -74,6 +75,7 @@ const currentPercent = ref(MAX_WIDTH_PERCENT)
 const root = ref(null)
 const frame = ref(null)
 const toolbar = ref(null)
+const choiceImageWidth = inject(CHOICE_IMAGE_WIDTH_KEY, null)
 
 let widthCommitTimer = null
 let placementFrame = null
@@ -86,6 +88,13 @@ const relativeWidthFromOptions = computed(() => {
 
   return width.kind === 'relative' || width.kind === 'percent' ? width.css : null
 })
+const choiceRelativeWidthPx = computed(() => {
+  if (!relativeWidthFromOptions.value || !choiceImageWidth?.value) return null
+  return choiceImageWidth.value * Number.parseFloat(relativeWidthFromOptions.value) / 100
+})
+const figureStyle = computed(() => choiceRelativeWidthPx.value !== null
+  ? { width: `${isSliderActive.value ? liveWidthPx.value : choiceRelativeWidthPx.value}px` }
+  : {})
 
 const fallbackWidthPx = computed(() => widthFromOptions.value || naturalWidth.value || 220)
 const effectiveContainerWidthPx = computed(() => containerWidthPx.value || MAX_WIDTH_PX)
@@ -120,7 +129,9 @@ const figureClass = computed(() => {
   return classes
 })
 const frameStyle = computed(() => ({
-  width: relativeWidthFromOptions.value && !isSliderActive.value ? relativeWidthFromOptions.value : `${liveWidthPx.value}px`,
+  width: relativeWidthFromOptions.value && !isSliderActive.value
+    ? (choiceRelativeWidthPx.value !== null ? `${choiceRelativeWidthPx.value}px` : relativeWidthFromOptions.value)
+    : `${liveWidthPx.value}px`,
 }))
 
 const toolbarPlacementClass = computed(() =>
@@ -162,6 +173,10 @@ function syncRenderedWidthFromFrame() {
 
 /** 行宽（\linewidth）= 父容器内容宽度，作为百分比滑杆的 100% 基准。 */
 function measureContainerWidth() {
+  if (choiceImageWidth?.value) {
+    containerWidthPx.value = choiceImageWidth.value
+    return
+  }
   const parent = root.value?.parentElement
   if (!parent) {
     return
@@ -197,6 +212,11 @@ watch(
   },
   { immediate: true },
 )
+watch(choiceImageWidth || (() => 0), () => {
+  measureContainerWidth()
+  syncRenderedWidthFromFrame()
+  syncPercentFromSource()
+})
 watch(
   () => props.src,
   () => {
@@ -501,6 +521,7 @@ onBeforeUnmount(() => {
   <div
     ref="root"
     class="resizable-image"
+    :style="figureStyle"
     :class="[
       figureClass,
       {

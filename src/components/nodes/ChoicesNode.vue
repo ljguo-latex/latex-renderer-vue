@@ -1,9 +1,10 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 
 import ContentNode from './ContentNode.vue'
 import TextNode from './TextNode.vue'
 import { isSimpleTextItem, resolveSimpleTextItem } from '../../latex/itemParser.js'
+import { CHOICE_IMAGE_WIDTH_KEY } from '../../latex/imageContext.js'
 
 const LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 
@@ -24,26 +25,31 @@ const container = ref(null)
 const measureRoot = ref(null)
 const containerWidth = ref(0)
 const columnCount = ref(1)
+const measuredColumnWidths = ref([])
+provide(CHOICE_IMAGE_WIDTH_KEY, containerWidth)
 
 let resizeObserver = null
 let mutationObserver = null
 let measureFrame = null
 
 
-function resolveColumnCount(longestItemWidth, width, itemCount) {
-  if (!itemCount || itemCount === 1 || !width || !longestItemWidth) {
-    return 1
+function resolveColumns(widths, width, gap) {
+  const itemCount = widths.length
+  if (itemCount <= 1 || !width || !Math.max(...widths)) {
+    return [width]
   }
 
-  if (longestItemWidth < width / 4) {
-    return Math.min(4, itemCount)
+  for (const columns of [...new Set([Math.min(4, itemCount), Math.min(2, itemCount)])]) {
+    const columnWidths = Array(columns).fill(0)
+    widths.forEach((itemWidth, index) => {
+      columnWidths[index % columns] = Math.max(columnWidths[index % columns], itemWidth)
+    })
+    if (columnWidths.reduce((sum, itemWidth) => sum + itemWidth, 0) + gap * (columns - 1) <= width) {
+      return columnWidths
+    }
   }
 
-  if (longestItemWidth < width / 2) {
-    return Math.min(2, itemCount)
-  }
-
-  return 1
+  return [width]
 }
 
 function updateContainerWidth() {
@@ -60,9 +66,10 @@ function measureChoices() {
     (element) => element.getBoundingClientRect().width,
   )
 
-  const longestItemWidth = widths.length ? Math.max(...widths) : 0
-
-  columnCount.value = resolveColumnCount(longestItemWidth, containerWidth.value, props.node.items?.length || 0)
+  const grid = container.value?.querySelector('.choices-node')
+  const gap = grid ? Number.parseFloat(window.getComputedStyle(grid).columnGap) || 0 : 0
+  measuredColumnWidths.value = resolveColumns(widths, containerWidth.value, gap)
+  columnCount.value = measuredColumnWidths.value.length
 }
 
 function scheduleMeasure() {
@@ -79,9 +86,19 @@ function scheduleMeasure() {
 }
 
 const effectiveColumnCount = computed(() => Math.max(1, Math.min(columnCount.value, props.node.items?.length || 1)))
-const choicesStyle = computed(() => ({
-  gridTemplateColumns: `repeat(${effectiveColumnCount.value}, minmax(0, 1fr))`,
-}))
+const choicesStyle = computed(() => {
+  const columns = effectiveColumnCount.value
+  const grid = container.value?.querySelector('.choices-node')
+  const gap = grid ? Number.parseFloat(window.getComputedStyle(grid).columnGap) || 0 : 0
+  const equalWidth = (containerWidth.value - gap * (columns - 1)) / columns
+  // Prefer equal columns; allow wider pictures their share when the whole row fits.
+  const equalColumnsFit = measuredColumnWidths.value.every((width) => width <= equalWidth)
+  return {
+    gridTemplateColumns: equalColumnsFit || measuredColumnWidths.value.length !== columns
+      ? `repeat(${columns}, minmax(0, 1fr))`
+      : measuredColumnWidths.value.map((width) => `minmax(0, ${Math.max(1, width)}fr)`).join(' '),
+  }
+})
 
 watch(
   () => props.node.items,
@@ -103,6 +120,9 @@ onMounted(() => {
   if (container.value) {
     resizeObserver.observe(container.value)
   }
+  measureRoot.value?.querySelectorAll('[data-choice-measure-item]').forEach((item) => {
+    resizeObserver.observe(item)
+  })
 
   mutationObserver = new MutationObserver(() => {
     scheduleMeasure()
@@ -113,6 +133,7 @@ onMounted(() => {
       childList: true,
       subtree: true,
       characterData: true,
+      attributes: true,
     })
   }
 })

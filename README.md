@@ -15,6 +15,7 @@ This repository now uses a real library build:
 - MathJax text rendering
 - `\includegraphics[...]` image blocks with optional in-place editing and `\linewidth` / `\textwidth` relative widths
 - `choices` environment rendering
+  - Automatically uses 4, 2, or 1 columns, including image choices; relative image widths inside `choices` use the full choice-group width and remain stable when the column count changes.
 - `enumerate` environment rendering with label template mapping
 - `\vspace{...}` vertical spacing and `\hspace{...}` inline spacing
 - `\textcolor{...}{...}`, `\color{...}{...}`, and grouped `{\color{...} ...}` inline text color commands
