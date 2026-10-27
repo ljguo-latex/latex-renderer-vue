@@ -54,6 +54,7 @@ describe('text figure rendering', () => {
     expect(figure.classList.contains('text-figure--right')).toBe(true)
     expect(figure.classList.contains('text-figure--v-top')).toBe(true)
     expect(figure.style.getPropertyValue('--text-figure-ratio')).toBe('0.6')
+    expect(figure.classList.contains('text-figure--align-right')).toBe(true)
     expect(root.querySelector('.text-figure__text').textContent).toContain('段一')
     expect(root.querySelector('.text-figure__figure img')).not.toBeNull()
     expect(root.querySelector('.text-figure__bar')).toBeNull()
@@ -70,7 +71,7 @@ describe('text figure rendering', () => {
     expect(source.value).toBe(String.raw`\textfigure[fig-pos=right-top, text-ratio=0.65]{
 如图所示的题干。
 }{
-\includegraphics[width=.3\linewidth]{a.png}
+\includegraphics[width=\linewidth]{a.png}
 }`)
     expect(root.querySelector('.text-figure')).not.toBeNull()
   })

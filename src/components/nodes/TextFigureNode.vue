@@ -1,5 +1,5 @@
 <script setup>
-import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 
 import TextFigureRegion from './TextFigureRegion.vue'
 import { LAYOUT_EDITOR_KEY } from '../../latex/imageContext.js'
@@ -36,25 +36,23 @@ const BAR_SPACE_PX = 36
 
 const root = ref(null)
 const body = ref(null)
-const figure = ref(null)
-const lineWidth = ref(0)
-const overflowing = ref(false)
 const dragRatio = ref(null)
 const barBelow = ref(false)
 let dragging = false
-let resizeObserver = null
 
 const layout = computed(() => getTextFigureLayout(props.node.options))
 const isSide = computed(() => layout.value.side === 'left' || layout.value.side === 'right')
 const ratio = computed(() => dragRatio.value ?? layout.value.ratio)
 const ratioLabel = computed(() => `${Math.round(ratio.value * 100)}%`)
+// 图比图栏窄时靠外侧：图在右靠右、图在左靠左，上下排列时按方位
+const figureAlign = computed(() => (isSide.value ? layout.value.side : layout.value.horizontal))
 const rootClass = computed(() => [
   `text-figure--${layout.value.side}`,
   isSide.value ? `text-figure--v-${layout.value.vertical}` : `text-figure--h-${layout.value.horizontal}`,
+  `text-figure--align-${figureAlign.value}`,
   {
     'text-figure--editable': props.editable,
     'text-figure--dragging': dragRatio.value !== null,
-    'text-figure--overflow': props.editable && overflowing.value,
     'text-figure--bar-below': barBelow.value,
   },
 ])
@@ -87,8 +85,6 @@ const figureSlot = computed(() => {
 watch(() => layout.value.ratio, () => {
   if (!dragging) dragRatio.value = null
 })
-
-watch([ratio, () => layout.value.side], () => nextTick(measure))
 
 function snapRatio(value) {
   const clamped = clampTextFigureRatio(value)
@@ -164,28 +160,6 @@ function placeBar() {
   if (!props.editable || !root.value) return
   barBelow.value = root.value.getBoundingClientRect().top - BAR_SPACE_PX < visibleTop(root.value)
 }
-
-// 按各栏实际宽度判断溢出：scrollWidth 会把图片工具栏等浮层也算进去
-function measure() {
-  const element = body.value
-  if (!element) return
-  lineWidth.value = element.clientWidth
-  const widths = [...element.children].map((child) => child.getBoundingClientRect().width)
-  const used = isSide.value ? widths.reduce((sum, width) => sum + width, 0) : Math.max(0, ...widths)
-  overflowing.value = used > element.clientWidth + 1
-}
-
-onMounted(() => {
-  measure()
-  if (typeof ResizeObserver === 'undefined') return
-  resizeObserver = new ResizeObserver(measure)
-  if (body.value) resizeObserver.observe(body.value)
-  if (figure.value) resizeObserver.observe(figure.value)
-})
-
-onBeforeUnmount(() => {
-  resizeObserver?.disconnect()
-})
 </script>
 
 <template>
@@ -232,20 +206,15 @@ onBeforeUnmount(() => {
       >
         <span v-if="editable && isSide" class="text-figure__handle" aria-hidden="true" />
       </div>
-      <div ref="figure" class="text-figure__figure">
+      <div class="text-figure__figure">
         <TextFigureRegion
           :nodes="node.items?.[1] || []"
           :editable="editable"
           :slot-context="figureSlot"
-          :image-width="lineWidth"
           @update-node="emit('update-node', $event)"
         />
       </div>
     </div>
-
-    <p v-if="editable && overflowing" class="text-figure__warning" role="status">
-      图片过宽，PDF 中会超出版心：请缩小图片或向左拖动分隔线
-    </p>
   </div>
 </template>
 
@@ -262,17 +231,21 @@ onBeforeUnmount(() => {
   align-items: flex-start;
 }
 
-/* 文字栏对应 varwidth{text-ratio × 行宽}：短文本收缩，长文本以比例为上限；
-   不参与 flex 收缩，图过宽时像 PDF 一样被推出版心，而不是挤窄文字 */
+/* 与 PDF 一致的两栏：文字栏固定为 text-ratio × 行宽，图栏是剩下的宽度（减去 1em 间隔），
+   图栏里图片的 \linewidth 就是图栏宽，所以图片不会超出版心 */
 .text-figure__text {
   flex: 0 0 auto;
   min-width: 0;
-  max-width: calc(var(--text-figure-ratio) * 100%);
 }
 
 .text-figure__figure {
-  flex: 0 0 auto;
-  text-align: center;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.text-figure--left .text-figure__text,
+.text-figure--right .text-figure__text {
+  flex-basis: calc(var(--text-figure-ratio) * 100%);
 }
 
 .text-figure__text :deep(.content-node),
@@ -280,9 +253,25 @@ onBeforeUnmount(() => {
   display: block;
 }
 
-.text-figure__figure :deep(.resizable-image--default) {
+.text-figure--align-left .text-figure__figure :deep(.resizable-image--default) {
+  margin-right: auto;
+}
+
+.text-figure--align-center .text-figure__figure :deep(.resizable-image--default) {
   margin-left: auto;
   margin-right: auto;
+}
+
+.text-figure--align-right .text-figure__figure :deep(.resizable-image--default) {
+  margin-left: auto;
+}
+
+.text-figure--align-center .text-figure__figure :deep(.resizable-image--fluid.resizable-image--default) {
+  justify-content: center;
+}
+
+.text-figure--align-right .text-figure__figure :deep(.resizable-image--fluid.resizable-image--default) {
+  justify-content: flex-end;
 }
 
 .text-figure__gap {
@@ -307,30 +296,22 @@ onBeforeUnmount(() => {
 .text-figure--top .text-figure__body,
 .text-figure--bottom .text-figure__body {
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 .text-figure--top .text-figure__body {
   flex-direction: column-reverse;
 }
 
-.text-figure--h-center .text-figure__figure {
-  align-self: center;
-}
-
-.text-figure--h-right .text-figure__figure {
-  align-self: flex-end;
+.text-figure--top .text-figure__figure,
+.text-figure--bottom .text-figure__figure {
+  flex: 0 0 auto;
 }
 
 .text-figure--editable:hover,
 .text-figure--editable:focus-within,
 .text-figure--dragging {
   outline: 1px dashed color-mix(in srgb, currentColor 28%, transparent);
-  outline-offset: 4px;
-}
-
-.text-figure.text-figure--overflow {
-  outline: 1px dashed #dc2626;
   outline-offset: 4px;
 }
 
@@ -445,12 +426,6 @@ onBeforeUnmount(() => {
 .text-figure__bar-button:focus-visible {
   outline: 2px solid color-mix(in srgb, currentColor 55%, transparent);
   outline-offset: 1px;
-}
-
-.text-figure__warning {
-  margin: 6px 0 0;
-  color: #b91c1c;
-  font-size: 12px;
 }
 
 @media (hover: none) {

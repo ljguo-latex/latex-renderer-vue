@@ -351,6 +351,8 @@ export const pinyinScopeProcessor: Processor<PinyinScopeNode>
 export const textFigureProcessor: Processor<TextFigureNode>
 export function parseTextFigureOptions(optionString?: string): Record<string, string | true>
 export function getTextFigureLayout(options?: Record<string, string | true>): TextFigureLayout
+/** 图栏占整行的比例：左右方位为 1 - text-ratio - 间隔，上下方位为 1。 */
+export function getTextFigureColumnRatio(options?: Record<string, string | true>): number
 /** For a host-owned MathJax 4 runtime: call inside startup.ready before defaultReady. */
 export function registerPinyinExtension(mathJax: object): void
 

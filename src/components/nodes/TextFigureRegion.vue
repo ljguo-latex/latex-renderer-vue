@@ -9,7 +9,7 @@ const props = defineProps({
   nodes: { type: Array, required: true },
   editable: { type: Boolean, default: false },
   slotContext: { type: Object, default: null },
-  // 图栏中图片 \linewidth 的像素基准（整行宽）；0 表示按父容器测量
+  // 图片 \linewidth 的像素基准；0 表示按父容器（所在的栏）测量，同时屏蔽外层选项的基准
   imageWidth: { type: Number, default: 0 },
 })
 

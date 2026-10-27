@@ -4,12 +4,12 @@ import { readBalancedGroup, skipWhitespace } from './utils/balance.js'
 import { formatWidthAsLinewidth, trimNumber } from '../utils/latex.js'
 
 /**
- * exam-zh-textfigure 的 \textfigure[options]{text}{figure}。
- * 版式语义以 exam-zh-textfigure.sty v0.2.5 为准：
- * - 文字放在 varwidth{text-ratio × \textwidth} 中，短文本会收缩；
- * - 图放在 varwidth{\columnwidth} 中，图里的 \linewidth 指整行宽度；
- * - 左右方位时文字与图间隔 1em；right / left 等同于 right-center / left-center；
- * - 未指定方位时为 bottom-right。
+ * exam-zh-textfigure 的 \textfigure[options]{text}{figure}，版式语义以模板中的
+ * fil_textfigure.sty 为准（在 exam-zh-textfigure v0.2.5 上改为固定两栏）：
+ * - 文字栏固定为 text-ratio × 行宽；
+ * - 左右方位时文字与图间隔 1em，图栏是剩下的宽度，图里的 \linewidth 指图栏宽度；
+ *   上下方位时图栏占满整行；
+ * - right / left 等同于 right-center / left-center；未指定方位时为 bottom-right。
  */
 const COMMAND = '\\textfigure'
 const POSITION_KEYS = ['fig-pos', 'pos']
@@ -28,8 +28,10 @@ export const TEXT_FIGURE_DEFAULT_POSITION = 'bottom-right'
 export const TEXT_FIGURE_DEFAULT_RATIO = 0.65
 export const TEXT_FIGURE_MIN_RATIO = 0.3
 export const TEXT_FIGURE_MAX_RATIO = 0.85
-// 1em 间距约占 A4 版心宽度的 3%，取 4% 留出余量，避免图片超出版心
+// 1em 间距约占 A4 版心宽度的 3%~4%，用于在整行宽与图栏宽之间换算图片宽度
 export const TEXT_FIGURE_GAP_RATIO = 0.04
+// 图片占图栏 95% 以上时直接写成 \linewidth（占满图栏）
+const FULL_COLUMN_THRESHOLD = 0.95
 export const TEXT_FIGURE_ADJUST_ACTIONS = ['expand-before', 'expand-after', 'shrink-first', 'shrink-last']
 
 function splitTopLevel(input = '', separator = ',') {
@@ -326,24 +328,34 @@ function separateFollowing(list, fromIndex) {
   return nextList
 }
 
+/** 图栏占整行的比例：左右方位为行宽减去文字栏和间隔，上下方位为整行。 */
+export function getTextFigureColumnRatio(options = {}) {
+  const { side, ratio } = getTextFigureLayout(options)
+  return side === 'left' || side === 'right' ? Math.max(0, 1 - ratio - TEXT_FIGURE_GAP_RATIO) : 1
+}
+
+function relativeWidthRatio(options = {}) {
+  const width = parseLatexLength(options.width)
+  return width.kind === 'relative' || width.kind === 'percent' ? Number.parseFloat(width.css) / 100 : null
+}
+
+function formatColumnWidth(columnShare) {
+  return columnShare >= FULL_COLUMN_THRESHOLD ? '\\linewidth' : formatWidthAsLinewidth(columnShare * 100)
+}
+
+/** 由图片原来占整行的比例推出文字栏比例，并把图片宽度换算为占图栏的比例，保持图片大小不变。 */
 function prepareFigure(imageNode) {
   const options = { ...(imageNode.options || {}) }
-  const width = parseLatexLength(options.width)
+  const widthRatio = relativeWidthRatio(options)
   let ratio = TEXT_FIGURE_DEFAULT_RATIO
 
-  if (width.kind === 'relative' || width.kind === 'percent') {
-    const widthRatio = Number.parseFloat(width.css) / 100
+  if (widthRatio !== null) {
     const steppedRatio = Math.round((1 - widthRatio - TEXT_FIGURE_GAP_RATIO) * 20) / 20
     ratio = Math.min(0.75, Math.max(0.5, steppedRatio))
-
-    const maxWidthRatio = 1 - ratio - TEXT_FIGURE_GAP_RATIO
-
-    if (widthRatio > maxWidthRatio) {
-      options.width = formatWidthAsLinewidth(maxWidthRatio * 100)
-      delete options.height
-    }
+    options.width = formatColumnWidth(Math.min(1, widthRatio / (1 - ratio - TEXT_FIGURE_GAP_RATIO)))
+    delete options.height
   } else if (!options.width && !options.height) {
-    options.width = formatWidthAsLinewidth((1 - ratio - TEXT_FIGURE_GAP_RATIO) * 100)
+    options.width = '\\linewidth'
   }
 
   return { image: { ...imageNode, options, alignment: 'default', original: undefined }, ratio }
@@ -399,6 +411,18 @@ export function wrapImageInList(list, index, { side = 'right', processors = [] }
   return [...list.slice(0, index), textFigure, ...tail, ...list.slice(after.end + 1)]
 }
 
+/** 图栏中的相对宽度换算回整行宽度，拆开后图片大小不变。 */
+function unwrapImage(imageNode, columnRatio) {
+  const options = { ...(imageNode.options || {}) }
+  const widthRatio = relativeWidthRatio(options)
+
+  if (widthRatio !== null && columnRatio < 1) {
+    options.width = formatWidthAsLinewidth(widthRatio * columnRatio * 100)
+  }
+
+  return { ...imageNode, options, alignment: 'center', original: undefined }
+}
+
 /** 拆回原样：文字在前、图片居中独占一行（图在左/上时图片在前）。 */
 export function unwrapTextFigureInList(list, index, { processors = [] } = {}) {
   const node = list[index]
@@ -411,7 +435,7 @@ export function unwrapTextFigureInList(list, index, { processors = [] } = {}) {
   const [, figureNodes = []] = node.items || []
   const visibleFigureNodes = figureNodes.filter((child) => child.type !== 'text' || (child.content ?? '').trim())
   const figure = visibleFigureNodes.length === 1 && visibleFigureNodes[0].type === 'image'
-    ? serializeLatex([{ ...visibleFigureNodes[0], alignment: 'center', original: undefined }], processors)
+    ? serializeLatex([unwrapImage(visibleFigureNodes[0], getTextFigureColumnRatio(node.options))], processors)
     : `\\begin{center}\n${serializeLatex(figureNodes, processors).trim()}\n\\end{center}`
   const { side } = getTextFigureLayout(node.options)
   const blocks = side === 'left' || side === 'top' ? [figure, text.trim()] : [text.trim(), figure]

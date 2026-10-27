@@ -128,25 +128,29 @@ describe('wrap image into textfigure', () => {
     \item 2
 \end{choices}
 }{
-\includegraphics[width=0.46\linewidth]{a.png}
+\includegraphics[width=\linewidth]{a.png}
 }
 
 后续`)
   })
 
-  it('derives the text ratio from a narrow image and keeps its width', () => {
+  it('derives the text ratio from the image width and converts it to the figure column', () => {
     const result = edit(String.raw`题干\includegraphics[width=0.3\linewidth]{a.png}`, pickImage, { type: 'wrap', side: 'left' })
 
     expect(result).toBe(String.raw`\textfigure[fig-pos=left-top, text-ratio=0.65]{
 题干
 }{
-\includegraphics[width=0.3\linewidth]{a.png}
+\includegraphics[width=\linewidth]{a.png}
 }`)
+    // 图栏 = 1 - 0.75 - 0.04 = 0.21，0.1 行宽约为图栏的一半
+    const narrow = edit(String.raw`题干\includegraphics[width=0.1\linewidth]{a.png}`, pickImage, { type: 'wrap', side: 'right' })
+    expect(narrow).toContain(String.raw`text-ratio=0.75]{`)
+    expect(narrow).toContain(String.raw`\includegraphics[width=0.48\linewidth]{a.png}`)
   })
 
-  it('gives images without width a width that fits beside the text', () => {
+  it('lets images without width fill the figure column', () => {
     expect(edit(String.raw`题干
-\includegraphics{a.png}`, pickImage, { type: 'wrap', side: 'right' })).toContain(String.raw`\includegraphics[width=0.31\linewidth]{a.png}`)
+\includegraphics{a.png}`, pickImage, { type: 'wrap', side: 'right' })).toContain(String.raw`\includegraphics[width=\linewidth]{a.png}`)
   })
 
   it('absorbs the following paragraph when the image opens the content', () => {
@@ -201,15 +205,21 @@ describe('textfigure structural edits', () => {
 \includegraphics[width=.3\linewidth]{a.png}
 }`
 
-  it('unwraps into text followed by a centered image', () => {
+  it('unwraps into text followed by a centered image of the same size', () => {
+    // 图栏 = 1 - 0.6 - 0.04 = 0.36，占图栏 0.3 即约 0.11 行宽
     expect(edit(`前\n${group}\n后`, pickGroup, { type: 'unwrap' })).toBe(String.raw`前
 段一
 
 段二
 \begin{center}
-\includegraphics[width=.3\linewidth]{a.png}
+\includegraphics[width=0.11\linewidth]{a.png}
 \end{center}
 后`)
+  })
+
+  it('keeps figure widths when unwrapping a top or bottom layout', () => {
+    expect(edit(group.replace('fig-pos=right-top, text-ratio=0.6', 'fig-pos=bottom-center'), pickGroup, { type: 'unwrap' }))
+      .toContain(String.raw`\includegraphics[width=.3\linewidth]{a.png}`)
   })
 
   it('puts the image first when unwrapping a left layout', () => {

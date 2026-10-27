@@ -196,23 +196,28 @@ during SSR; actual typesetting occurs in the browser.
 
 ### 图文并排（textfigure）
 
-渲染 exam-zh-textfigure 的 `\textfigure[options]{文字}{图}`，预览规则与宏包一致：
-文字栏宽度上限为 `text-ratio × 行宽`（短文本收缩），文字与图间隔 `1em`，
-图栏中图片的 `\linewidth` 指整行宽度；`right` / `left` 等同于 `-center`，
-未写方位时为 `bottom-right`。宽度溢出版心时，编辑态会标红提示。
+渲染 exam-zh-textfigure 的 `\textfigure[options]{文字}{图}`，按固定两栏预览：
+文字栏宽度为 `text-ratio × 行宽`，文字与图间隔 `1em`，图栏是剩下的宽度。
+图栏中图片的 `\linewidth` 指**图栏宽度**，所以 `width=\linewidth` 正好占满图栏，
+图片不会超出版心；图比图栏窄时靠外侧对齐（图在右靠右、图在左靠左）。
+上下方位时图栏占满整行。`right` / `left` 等同于 `-center`，未写方位时为 `bottom-right`。
+
+原版宏包用 varwidth 并在加载时固定宽度，与上述规则不同；PDF 端需要宿主模板提供
+同样语义的 `\textfigure` 补丁（本项目宿主为 `fil_textfigure.sty`）。
 
 ```tex
 \textfigure[fig-pos=right-top, text-ratio=0.65]{
 如图，在三角形 $ABC$ 中……
 \begin{choices} \item … \end{choices}
 }{
-\includegraphics[width=0.31\linewidth]{a.png}
+\includegraphics[width=\linewidth]{a.png}
 }
 ```
 
 `editable-images` 开启时提供可视化编辑，均直接改写源码：
 
-- 独立图片的工具栏有「独占一行 / 图在右 / 图在左」。转为并排时，图片与它前一段
+- 独立图片的工具栏有「独占一行 / 图在右 / 图在左」。转为并排时按图片原宽度推出 `text-ratio`，
+  并把宽度换算成占图栏的比例（拆开时再换算回整行），图片大小保持不变。图片与它前一段
   （跳过中间的空行；选项等块级内容一并带入）组成图文组；图片前没有内容时取后一段。
   仅正文、`enumerate` 小题和 `minipage` 中提供，选项、表格里的图片不提供。
 - 图文组中图片的工具栏把对齐方式换成版式与「顶 / 中 / 底」垂直对齐；
@@ -220,8 +225,7 @@ during SSR; actual typesetting occurs in the browser.
 - 悬停图文组时的工具条可「＋上段 / ＋下段 / －首段 / －末段」调整文字栏范围，或取消并排。
 
 新生成的图文组写作 `fig-pos=…-top` 并显式写出 `text-ratio`；只改方位或比例时只重写选项，
-文字和图的源码保持原样。PDF 端需要在题号后同行排版的模板中配合宿主的 `\textfigure` 补丁，
-否则宏包开头的 `\par` 会让题号单独占一行。
+文字和图的源码保持原样。
 
 ### Waiting before measuring or printing
 
@@ -363,6 +367,7 @@ createPinyinTokens('中(zhōng)国', text => ['zhōng', 'guó'])
 - `resolvePinyinOptions`
 - `pinyinScopeProcessor`
 - `textFigureProcessor`
+- `getTextFigureColumnRatio`
 - `getTextFigureLayout`
 - `parseTextFigureOptions`
 - `registerPinyinExtension`
