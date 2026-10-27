@@ -380,8 +380,19 @@ onBeforeUnmount(() => {
   line-height: 1;
   white-space: nowrap;
   opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s ease;
+  visibility: hidden;
+  /* 移出后延迟隐藏，给鼠标从图文组移到工具条留出时间 */
+  transition: opacity 0.15s ease 0.3s, visibility 0s linear 0.45s;
+}
+
+/* 透明桥接工具条与图文组之间的空隙，鼠标经过时不丢失悬停 */
+.text-figure__bar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 8px;
 }
 
 .text-figure--bar-below .text-figure__bar {
@@ -389,17 +400,24 @@ onBeforeUnmount(() => {
   bottom: auto;
 }
 
+.text-figure--bar-below .text-figure__bar::after {
+  top: auto;
+  bottom: 100%;
+}
+
 .text-figure--editable:hover .text-figure__bar,
 .text-figure--editable:focus-within .text-figure__bar,
 .text-figure--dragging .text-figure__bar {
   opacity: 1;
-  pointer-events: auto;
+  visibility: visible;
+  transition-delay: 0s;
 }
 
 /* 图片工具栏展开时让位，避免两条工具栏叠在一起 */
 .text-figure:has(.resizable-image--open) .text-figure__bar {
   opacity: 0;
-  pointer-events: none;
+  visibility: hidden;
+  transition-delay: 0s;
 }
 
 .text-figure__badge {
@@ -439,7 +457,7 @@ onBeforeUnmount(() => {
   .text-figure--editable .text-figure__bar,
   .text-figure--editable .text-figure__handle {
     opacity: 1;
-    pointer-events: auto;
+    visibility: visible;
   }
 }
 </style>
