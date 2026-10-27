@@ -67,6 +67,11 @@ const props = defineProps({
 
 const emit = defineEmits(['commit-width', 'commit-alignment', 'commit-layout', 'commit-vertical', 'replace-image', 'edit-image', 'enhance-image'])
 const showAlignment = computed(() => props.layoutMode !== 'inside')
+// 独立图片本来就独占一行，只提供「图在右 / 图在左」；图文组内的图片才需要「独占一行」来拆开
+const layoutButtons = computed(() => {
+  if (props.layoutMode === 'block') return LAYOUT_OPTIONS.filter((option) => option.value !== 'block')
+  return props.layoutMode === 'inside' ? LAYOUT_OPTIONS : []
+})
 const showVertical = computed(() => props.layoutMode === 'inside' && ['left', 'right'].includes(props.layoutSide))
 const replacementInput = ref(null)
 
@@ -565,22 +570,24 @@ onBeforeUnmount(() => {
     ]"
   >
     <div v-if="editable" ref="toolbar" class="resizable-image__toolbar" :style="toolbarStyle">
-      <div v-if="replaceable || processable || enhanceable" class="resizable-image__actions">
+      <div v-if="replaceable || processable || enhanceable" class="resizable-image__actions" role="group" aria-label="图片处理">
         <button
           v-if="replaceable"
           type="button"
           class="resizable-image__action-button"
+          :class="{ 'resizable-image__action-button--busy': replacing }"
           :disabled="replacing"
-          title="替换当前图片"
+          :title="replacing ? '处理中…' : '替换当前图片'"
+          :aria-label="replacing ? '处理中…' : '替换当前图片'"
+          :aria-busy="replacing"
           @click="replacementInput?.click()"
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 2v6h-6"></path>
             <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
             <path d="M3 22v-6h6"></path>
             <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
           </svg>
-          <span>{{ replacing ? '处理中…' : '替换' }}</span>
         </button>
         <button
           v-if="processable"
@@ -588,14 +595,14 @@ onBeforeUnmount(() => {
           class="resizable-image__action-button"
           :disabled="replacing"
           title="抠图 / 线稿：黑白线稿一键去底与线条增强"
+          aria-label="抠图 / 线稿"
           @click="emit('edit-image')"
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="m12 3-1.9 4.4L5.7 9l4.4 1.9L12 15.3l1.9-4.4L18.3 9l-4.4-1.6L12 3z"></path>
             <path d="M19 15l-1 2.2-2.2 1 2.2 1 1 2.2 1-2.2 2.2-1-2.2-1-1-2.2z"></path>
             <path d="M5 16l-.7 1.5-1.5.7 1.5.7.7 1.5.7-1.5 1.5-.7-1.5-.7-.7-1.5z"></path>
           </svg>
-          <span>抠图</span>
         </button>
         <button
           v-if="enhanceable"
@@ -603,12 +610,12 @@ onBeforeUnmount(() => {
           class="resizable-image__action-button"
           :disabled="replacing"
           title="图片清晰化：提升图片清晰度，宽高放大至 2 倍"
+          aria-label="图片清晰化"
           @click="emit('enhance-image')"
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5M8 16l4-8 4 8M9.5 13h5" />
           </svg>
-          <span>清晰化</span>
         </button>
       </div>
 
@@ -616,14 +623,16 @@ onBeforeUnmount(() => {
 
       <div v-if="(replaceable || processable || enhanceable) && (showAlignment || layoutMode)" class="resizable-image__divider" />
 
-      <div v-if="showAlignment" class="resizable-image__alignment">
+      <div v-if="showAlignment || layoutButtons.length" class="resizable-image__alignment" role="group" aria-label="对齐与版式">
         <button
-          v-for="option in ALIGNMENT_OPTIONS"
+          v-for="option in (showAlignment ? ALIGNMENT_OPTIONS : [])"
           :key="option.value"
           class="resizable-image__alignment-button"
           :class="{ 'resizable-image__alignment-button--active': alignment === option.value }"
           type="button"
           :title="option.label"
+          :aria-label="option.label"
+          :aria-pressed="alignment === option.value"
           @click="updateAlignment(option.value)"
         >
           <!-- 无对齐/默认 -->
@@ -654,13 +663,11 @@ onBeforeUnmount(() => {
             <line x1="21" y1="18" x2="6" y2="18"></line>
           </svg>
         </button>
-      </div>
 
-      <div v-if="showAlignment && layoutMode" class="resizable-image__divider" />
+        <span v-if="showAlignment && layoutButtons.length" class="resizable-image__group-divider" aria-hidden="true" />
 
-      <div v-if="layoutMode" class="resizable-image__alignment" role="group" aria-label="图文版式">
         <button
-          v-for="option in LAYOUT_OPTIONS"
+          v-for="option in layoutButtons"
           :key="option.value"
           class="resizable-image__alignment-button"
           :class="{ 'resizable-image__alignment-button--active': layoutSide === option.value }"
@@ -823,6 +830,31 @@ onBeforeUnmount(() => {
   transition: opacity 0.15s ease;
 }
 
+/* 只显示图标，说明放在 title 中，与对齐按钮同尺寸 */
+.resizable-image__actions .resizable-image__action-button {
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+}
+
+.resizable-image__action-button--busy svg {
+  animation: resizable-image-spin 0.9s linear infinite;
+}
+
+@keyframes resizable-image-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.resizable-image__group-divider {
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 1px;
+  margin: 5px 2px;
+  background: rgba(18, 33, 48, 0.12);
+}
+
 .resizable-image__action-button:hover:not(:disabled),
 .resizable-image__replace-button:hover:not(:disabled) {
   background: #ffffff;
@@ -929,7 +961,7 @@ onBeforeUnmount(() => {
   z-index: 3;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.3rem;
   width: max-content;
   max-width: min(740px, var(--toolbar-max-width, calc(100vw - 2rem)));
   flex-wrap: nowrap;
@@ -1035,9 +1067,8 @@ onBeforeUnmount(() => {
 .resizable-image__slider {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  min-width: 105px;
-  flex: 1 1 auto;
+  gap: 0.3rem;
+  flex: 0 1 auto;
   padding-right: 2px;
 }
 
@@ -1080,7 +1111,8 @@ onBeforeUnmount(() => {
 }
 
 .resizable-image__slider-value {
-  min-width: 3.2rem;
+  min-width: 2.4rem;
+  text-align: right;
   color: inherit;
   font-size: 0.75rem;
   font-weight: 500;
@@ -1092,7 +1124,7 @@ onBeforeUnmount(() => {
   color: inherit;
   -webkit-appearance: none;
   appearance: none;
-  width: 100%;
+  width: 80px;
   min-width: 55px;
   height: 18px;
   background: transparent;
