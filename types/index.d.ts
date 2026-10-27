@@ -128,6 +128,28 @@ export interface PinyinScopeNode {
   original?: string
 }
 
+/** exam-zh-textfigure：items 固定为 [文字栏节点, 图栏节点] */
+export interface TextFigureNode {
+  id: string
+  type: 'textfigure'
+  /** 源码中的选项原文；修改选项后为 null，按 options 重新生成 */
+  optionString: string | null
+  options: Record<string, string | true>
+  items: [LatexNode[], LatexNode[]]
+  /** 两栏参数内首尾空白，用于保持源码排版 */
+  spacing?: [[string, string], [string, string]]
+  original?: string
+}
+
+export interface TextFigureLayout {
+  position: string
+  side: 'left' | 'right' | 'top' | 'bottom'
+  vertical: 'top' | 'center' | 'bottom' | null
+  horizontal: 'left' | 'center' | 'right' | null
+  /** 文字栏占行宽的比例上限（0–1） */
+  ratio: number
+}
+
 export type LatexNode =
   | TextNode
   | ImageNode
@@ -139,6 +161,7 @@ export type LatexNode =
   | TabularNode
   | MathEnvironmentNode
   | PinyinScopeNode
+  | TextFigureNode
 
 /* ============================================================
  * Length parsing
@@ -325,6 +348,9 @@ export const DEFAULT_PINYIN_OPTIONS: Readonly<Required<PinyinOptions>>
 export function resolvePinyinOptions(values?: PinyinOptions): Required<PinyinOptions>
 export function createPinyinTokens(source?: string, resolver?: PinyinResolver): PinyinToken[]
 export const pinyinScopeProcessor: Processor<PinyinScopeNode>
+export const textFigureProcessor: Processor<TextFigureNode>
+export function parseTextFigureOptions(optionString?: string): Record<string, string | true>
+export function getTextFigureLayout(options?: Record<string, string | true>): TextFigureLayout
 /** For a host-owned MathJax 4 runtime: call inside startup.ready before defaultReady. */
 export function registerPinyinExtension(mathJax: object): void
 

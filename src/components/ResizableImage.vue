@@ -22,6 +22,16 @@ const ALIGNMENT_OPTIONS = [
   { value: 'center', label: '中' },
   { value: 'right', label: '右' },
 ]
+const LAYOUT_OPTIONS = [
+  { value: 'block', label: '独占一行' },
+  { value: 'right', label: '图在右，与文字并排' },
+  { value: 'left', label: '图在左，与文字并排' },
+]
+const VERTICAL_OPTIONS = [
+  { value: 'top', label: '与文字顶部对齐' },
+  { value: 'center', label: '与文字垂直居中' },
+  { value: 'bottom', label: '与文字底部对齐' },
+]
 
 const props = defineProps({
   id: {
@@ -49,9 +59,15 @@ const props = defineProps({
   replaceable: { type: Boolean, default: false },
   replacing: { type: Boolean, default: false },
   replacementError: { type: String, default: '' },
+  // null：不提供版式；block：独占一行，可转为图文并排；inside：位于图文组的图栏
+  layoutMode: { type: String, default: null },
+  layoutSide: { type: String, default: 'block' },
+  layoutVertical: { type: String, default: null },
 })
 
-const emit = defineEmits(['commit-width', 'commit-alignment', 'replace-image', 'edit-image', 'enhance-image'])
+const emit = defineEmits(['commit-width', 'commit-alignment', 'commit-layout', 'commit-vertical', 'replace-image', 'edit-image', 'enhance-image'])
+const showAlignment = computed(() => props.layoutMode !== 'inside')
+const showVertical = computed(() => props.layoutMode === 'inside' && ['left', 'right'].includes(props.layoutSide))
 const replacementInput = ref(null)
 
 function selectReplacement(event) {
@@ -311,6 +327,22 @@ function updateAlignment(alignment) {
     id: props.id,
     alignment,
   })
+}
+
+function updateLayout(side) {
+  if (!props.editable || side === props.layoutSide) {
+    return
+  }
+
+  emit('commit-layout', { id: props.id, side })
+}
+
+function updateVertical(vertical) {
+  if (!props.editable || vertical === props.layoutVertical) {
+    return
+  }
+
+  emit('commit-vertical', { id: props.id, vertical })
 }
 
 function toggleToolbar() {
@@ -582,9 +614,9 @@ onBeforeUnmount(() => {
 
       <input v-if="replaceable" ref="replacementInput" type="file" accept="image/png,image/jpeg" hidden @change="selectReplacement" />
 
-      <div v-if="(replaceable || processable || enhanceable) && ALIGNMENT_OPTIONS.length" class="resizable-image__divider" />
+      <div v-if="(replaceable || processable || enhanceable) && (showAlignment || layoutMode)" class="resizable-image__divider" />
 
-      <div class="resizable-image__alignment">
+      <div v-if="showAlignment" class="resizable-image__alignment">
         <button
           v-for="option in ALIGNMENT_OPTIONS"
           :key="option.value"
@@ -620,6 +652,65 @@ onBeforeUnmount(() => {
             <line x1="21" y1="6" x2="3" y2="6"></line>
             <line x1="21" y1="14" x2="10" y2="14"></line>
             <line x1="21" y1="18" x2="6" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div v-if="showAlignment && layoutMode" class="resizable-image__divider" />
+
+      <div v-if="layoutMode" class="resizable-image__alignment" role="group" aria-label="图文版式">
+        <button
+          v-for="option in LAYOUT_OPTIONS"
+          :key="option.value"
+          class="resizable-image__alignment-button"
+          :class="{ 'resizable-image__alignment-button--active': layoutSide === option.value }"
+          type="button"
+          :title="option.label"
+          :aria-label="option.label"
+          :aria-pressed="layoutSide === option.value"
+          @click="updateLayout(option.value)"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <template v-if="option.value === 'block'">
+              <line x1="3" y1="4" x2="21" y2="4"></line>
+              <rect x="7" y="8" width="10" height="8" rx="1.5"></rect>
+              <line x1="3" y1="20" x2="21" y2="20"></line>
+            </template>
+            <template v-else-if="option.value === 'right'">
+              <line x1="3" y1="6" x2="11" y2="6"></line>
+              <line x1="3" y1="12" x2="11" y2="12"></line>
+              <line x1="3" y1="18" x2="11" y2="18"></line>
+              <rect x="14" y="5" width="7" height="14" rx="1.5"></rect>
+            </template>
+            <template v-else>
+              <rect x="3" y="5" width="7" height="14" rx="1.5"></rect>
+              <line x1="13" y1="6" x2="21" y2="6"></line>
+              <line x1="13" y1="12" x2="21" y2="12"></line>
+              <line x1="13" y1="18" x2="21" y2="18"></line>
+            </template>
+          </svg>
+        </button>
+      </div>
+
+      <div v-if="showVertical" class="resizable-image__alignment" role="group" aria-label="图片垂直对齐">
+        <button
+          v-for="option in VERTICAL_OPTIONS"
+          :key="option.value"
+          class="resizable-image__alignment-button"
+          :class="{ 'resizable-image__alignment-button--active': layoutVertical === option.value }"
+          type="button"
+          :title="option.label"
+          :aria-label="option.label"
+          :aria-pressed="layoutVertical === option.value"
+          @click="updateVertical(option.value)"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line v-if="option.value === 'top'" x1="3" y1="3" x2="21" y2="3"></line>
+            <line v-else-if="option.value === 'bottom'" x1="3" y1="21" x2="21" y2="21"></line>
+            <line v-else x1="3" y1="12" x2="21" y2="12"></line>
+            <rect v-if="option.value === 'top'" x="8" y="6" width="8" height="10" rx="1.5"></rect>
+            <rect v-else-if="option.value === 'bottom'" x="8" y="8" width="8" height="10" rx="1.5"></rect>
+            <rect v-else x="8" y="7" width="8" height="10" rx="1.5"></rect>
           </svg>
         </button>
       </div>

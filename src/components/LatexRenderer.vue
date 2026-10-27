@@ -2,12 +2,13 @@
 import { computed, provide } from 'vue'
 
 import { parseLatex, replaceNodeDeep, serializeLatex } from '../latex/core'
-import { IDENTITY_IMAGE_SRC_RESOLVER, IMAGE_SRC_RESOLVER_KEY, IMAGE_REPLACER_KEY, IMAGE_EDITOR_KEY, IMAGE_ENHANCER_KEY } from '../latex/imageContext'
+import { IDENTITY_IMAGE_SRC_RESOLVER, IMAGE_SRC_RESOLVER_KEY, IMAGE_REPLACER_KEY, IMAGE_EDITOR_KEY, IMAGE_ENHANCER_KEY, LAYOUT_EDITOR_KEY } from '../latex/imageContext'
 import { inlineCommandHandlers as defaultInlineCommandHandlers } from '../latex/inline/commands'
 import { INLINE_COMMAND_HANDLERS_KEY } from '../latex/inline/context'
 import { resolveDocumentContexts } from '../latex/inline/documentContext.js'
 import { resolvePinyinOptions } from '../latex/pinyin/options.js'
 import { createProcessorRegistry, defaultProcessors } from '../latex/processors'
+import { applyTextFigureEdit } from '../latex/textFigure.js'
 
 const props = defineProps({
   modelValue: {
@@ -56,8 +57,7 @@ provide(IMAGE_EDITOR_KEY, computed(() => props.imageEditor))
 provide(IMAGE_ENHANCER_KEY, computed(() => props.imageEnhancer))
 provide('latex-processors', activeProcessors)
 
-function handleNodeUpdate(nextNode) {
-  const nextNodes = replaceNodeDeep(nodes.value, nextNode)
+function emitNodes(nextNodes) {
   const serialized = serializeLatex(nextNodes, activeProcessors.value)
 
   // 内容未变化时不回写，避免预览覆盖编辑器里的原始写法
@@ -65,6 +65,30 @@ function handleNodeUpdate(nextNode) {
     emit('update:modelValue', serialized)
   }
 }
+
+function handleNodeUpdate(nextNode) {
+  emitNodes(replaceNodeDeep(nodes.value, nextNode))
+}
+
+const supportsTextFigure = computed(() => activeProcessors.value.some((processor) => processor.type === 'textfigure'))
+
+function previewLayoutEdit(targetId, edit) {
+  if (!props.editableImages || !supportsTextFigure.value) return null
+  return applyTextFigureEdit(nodes.value, targetId, edit, activeProcessors.value)
+}
+
+function commitLayoutEdit(targetId, edit) {
+  const nextNodes = previewLayoutEdit(targetId, edit)
+  if (nextNodes) emitNodes(nextNodes)
+}
+
+provide(LAYOUT_EDITOR_KEY, {
+  canWrapImage: (id) => Boolean(previewLayoutEdit(id, { type: 'wrap', side: 'right' })),
+  wrapImage: (id, side) => commitLayoutEdit(id, { type: 'wrap', side }),
+  unwrap: (id) => commitLayoutEdit(id, { type: 'unwrap' }),
+  canAdjust: (id, action) => Boolean(previewLayoutEdit(id, { type: 'adjust', action })),
+  adjust: (id, action) => commitLayoutEdit(id, { type: 'adjust', action }),
+})
 </script>
 
 <template>

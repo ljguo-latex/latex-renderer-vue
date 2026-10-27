@@ -321,3 +321,130 @@ function replaceNodeDeepInNode(node, nextNode) {
 export function replaceNodeDeep(nodes = [], nextNode) {
   return replaceInNodeList(nodes, nextNode)
 }
+
+function transformInNode(node, targetId, transform) {
+  let nextNode = node
+
+  if (Array.isArray(node.children)) {
+    const nextChildren = transformNodeListDeep(node.children, targetId, transform)
+
+    if (nextChildren !== node.children) {
+      nextNode = { ...nextNode, children: nextChildren }
+    }
+  }
+
+  if (Array.isArray(node.items)) {
+    let itemsChanged = false
+    const nextItems = node.items.map((item) => {
+      if (!Array.isArray(item)) {
+        return item
+      }
+
+      const nextItem = transformNodeListDeep(item, targetId, transform)
+
+      if (nextItem !== item) {
+        itemsChanged = true
+      }
+
+      return nextItem
+    })
+
+    if (itemsChanged) {
+      nextNode = { ...nextNode, items: nextItems }
+    }
+  }
+
+  if (Array.isArray(node.rows)) {
+    let rowsChanged = false
+    const nextRows = node.rows.map((row) => {
+      let rowChanged = false
+      const nextCells = (row.cells || []).map((cell) => {
+        const originalChildren = cell.children || []
+        const nextChildren = transformNodeListDeep(originalChildren, targetId, transform)
+
+        if (nextChildren === originalChildren) {
+          return cell
+        }
+
+        rowChanged = true
+        return { ...cell, children: nextChildren }
+      })
+
+      if (!rowChanged) {
+        return row
+      }
+
+      rowsChanged = true
+      return { ...row, cells: nextCells }
+    })
+
+    if (rowsChanged) {
+      nextNode = { ...nextNode, rows: nextRows }
+    }
+  }
+
+  return nextNode === node ? node : clearOriginal(nextNode)
+}
+
+/**
+ * 在节点树中找到包含 targetId 的兄弟列表，交给 transform(list, index) 生成新列表。
+ * 用于需要改动兄弟节点的结构性编辑（如把图片和前文合并为图文组）；
+ * transform 返回 null 表示不修改。受影响的祖先节点会清除 original，按子节点重新序列化。
+ */
+export function transformNodeListDeep(nodes = [], targetId, transform) {
+  const index = nodes.findIndex((node) => node.id === targetId)
+
+  if (index !== -1) {
+    return transform(nodes, index) || nodes
+  }
+
+  let changed = false
+  const nextNodes = nodes.map((node) => {
+    const nextNode = transformInNode(node, targetId, transform)
+
+    if (nextNode !== node) {
+      changed = true
+    }
+
+    return nextNode
+  })
+
+  return changed ? nextNodes : nodes
+}
+
+function nodeChildLists(node) {
+  const lists = []
+
+  if (Array.isArray(node.children)) {
+    lists.push(node.children)
+  }
+
+  if (Array.isArray(node.items)) {
+    lists.push(...node.items.filter(Array.isArray))
+  }
+
+  if (Array.isArray(node.rows)) {
+    node.rows.forEach((row) => (row.cells || []).forEach((cell) => lists.push(cell.children || [])))
+  }
+
+  return lists
+}
+
+/** 返回目标节点的祖先链（由外到内，不含目标本身）；找不到时返回 null。 */
+export function findNodeAncestors(nodes = [], targetId, ancestors = []) {
+  for (const node of nodes) {
+    if (node.id === targetId) {
+      return ancestors
+    }
+
+    for (const list of nodeChildLists(node)) {
+      const found = findNodeAncestors(list, targetId, [...ancestors, node])
+
+      if (found) {
+        return found
+      }
+    }
+  }
+
+  return null
+}

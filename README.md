@@ -17,6 +17,7 @@ This repository now uses a real library build:
 - `choices` environment rendering
   - Automatically uses 4, 2, or 1 columns, including image choices; relative image widths inside `choices` use the full choice-group width and remain stable when the column count changes.
   - Supports `\begin{choices}[label-pos = bottom]`: `top-left` places labels at the upper left, `left` centers them vertically on the left, and `bottom` centers them below the content. The default `auto` uses bottom labels for the whole group when any option contains an image or its measured content exceeds two text lines, otherwise upper-left labels. Explicit positions override automatic placement. The option is preserved when editing images.
+- `\textfigure[options]{text}{figure}` side-by-side text and figure layout (exam-zh-textfigure), with visual editing — see [图文并排](#图文并排-textfigure)
 - `enumerate` environment rendering with label template mapping
 - `\vspace{...}` vertical spacing and `\hspace{...}` inline spacing
 - `\textcolor{...}{...}`, `\color{...}{...}`, and grouped `{\color{...} ...}` inline text color commands
@@ -193,6 +194,35 @@ and clears old MathJax records before replacing content or unmounting. A renderi
 failure falls back to the original LaTeX text. `loadMathJax()` returns `null`
 during SSR; actual typesetting occurs in the browser.
 
+### 图文并排（textfigure）
+
+渲染 exam-zh-textfigure 的 `\textfigure[options]{文字}{图}`，预览规则与宏包一致：
+文字栏宽度上限为 `text-ratio × 行宽`（短文本收缩），文字与图间隔 `1em`，
+图栏中图片的 `\linewidth` 指整行宽度；`right` / `left` 等同于 `-center`，
+未写方位时为 `bottom-right`。宽度溢出版心时，编辑态会标红提示。
+
+```tex
+\textfigure[fig-pos=right-top, text-ratio=0.65]{
+如图，在三角形 $ABC$ 中……
+\begin{choices} \item … \end{choices}
+}{
+\includegraphics[width=0.31\linewidth]{a.png}
+}
+```
+
+`editable-images` 开启时提供可视化编辑，均直接改写源码：
+
+- 独立图片的工具栏有「独占一行 / 图在右 / 图在左」。转为并排时，图片与它前一段
+  （跳过中间的空行；选项等块级内容一并带入）组成图文组；图片前没有内容时取后一段。
+  仅正文、`enumerate` 小题和 `minipage` 中提供，选项、表格里的图片不提供。
+- 图文组中图片的工具栏把对齐方式换成版式与「顶 / 中 / 底」垂直对齐；
+  拖动文字与图之间的分隔线（或聚焦后按 ←/→）调整 `text-ratio`，吸附到 5% 刻度。
+- 悬停图文组时的工具条可「＋上段 / ＋下段 / －首段 / －末段」调整文字栏范围，或取消并排。
+
+新生成的图文组写作 `fig-pos=…-top` 并显式写出 `text-ratio`；只改方位或比例时只重写选项，
+文字和图的源码保持原样。PDF 端需要在题号后同行排版的模板中配合宿主的 `\textfigure` 补丁，
+否则宏包开头的 `\par` 会让题号单独占一行。
+
 ### Waiting before measuring or printing
 
 Use `waitForMathJax(root)` after changing renderer content and before measuring,
@@ -332,6 +362,9 @@ createPinyinTokens('中(zhōng)国', text => ['zhōng', 'guó'])
 - `DEFAULT_PINYIN_OPTIONS`
 - `resolvePinyinOptions`
 - `pinyinScopeProcessor`
+- `textFigureProcessor`
+- `getTextFigureLayout`
+- `parseTextFigureOptions`
 - `registerPinyinExtension`
 
 ## Extending Block Processors

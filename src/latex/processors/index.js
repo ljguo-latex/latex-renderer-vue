@@ -7,6 +7,7 @@ import { mathEnvironmentProcessor } from './mathEnvironmentProcessor.js'
 import { minipageProcessor } from './minipageProcessor.js'
 import { pinyinScopeProcessor } from './pinyinScopeProcessor.js'
 import { tabularProcessor } from './tabularProcessor.js'
+import { textFigureProcessor } from './textFigureProcessor.js'
 import { vspaceProcessor } from './vspaceProcessor.js'
 
 export const textProcessor = {
@@ -26,10 +27,11 @@ export const defaultProcessors = [
   tabularProcessor,
   mathEnvironmentProcessor,
   pinyinScopeProcessor,
+  textFigureProcessor,
 ]
 
 export function createProcessorRegistry(processors = defaultProcessors) {
   return new Map([textProcessor, ...processors].map((processor) => [processor.type, processor]))
 }
 
-export { minipageProcessor, vspaceProcessor, pinyinScopeProcessor }
+export { minipageProcessor, vspaceProcessor, pinyinScopeProcessor, textFigureProcessor }
