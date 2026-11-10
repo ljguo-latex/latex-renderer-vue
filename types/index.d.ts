@@ -60,6 +60,7 @@ export interface EnumerateNode {
 
 export interface ChoicesOptions {
   labelPos?: 'auto' | 'top-left' | 'left' | 'bottom'
+  columns?: number | 'auto'
 }
 
 export interface ChoicesNode {

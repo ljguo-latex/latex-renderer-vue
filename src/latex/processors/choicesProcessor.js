@@ -7,10 +7,26 @@ import { splitItems } from '../utils/items.js'
 const ITEM_INDENT = '    '
 const LABEL_POSITIONS = new Set(['auto', 'top-left', 'left', 'bottom'])
 
+function readOption(optionString, key) {
+  const match = optionString.match(new RegExp(
+    `(?:^|,)\\s*${key}\\s*=\\s*(?:\\{\\s*([^{}]*?)\\s*\\}|([^,]*))`,
+  ))
+  return (match?.[1] ?? match?.[2] ?? '').trim()
+}
+
+function isValidColumns(columns) {
+  return columns === 'auto' || (Number.isSafeInteger(columns) && columns > 0)
+}
+
 function parseOptions(optionString = '') {
-  const match = optionString.match(/(?:^|,)\s*label-pos\s*=\s*(?:\{\s*([^{}]*?)\s*\}|([^,]*))/)
-  const labelPos = (match?.[1] ?? match?.[2] ?? '').trim()
-  return LABEL_POSITIONS.has(labelPos) ? { labelPos } : {}
+  const options = {}
+  const labelPos = readOption(optionString, 'label-pos')
+  const columnsValue = readOption(optionString, 'columns')
+  const columns = /^\d+$/.test(columnsValue) ? Number(columnsValue) : columnsValue
+
+  if (LABEL_POSITIONS.has(labelPos)) options.labelPos = labelPos
+  if (isValidColumns(columns)) options.columns = columns
+  return options
 }
 
 function parseChoiceItems(body = '', processors = [], id = 'choices') {
@@ -39,8 +55,11 @@ export const choicesProcessor = {
     }
   },
   serialize(node, { processors = [] } = {}) {
-    const labelPos = node.options?.labelPos
-    const optionBlock = LABEL_POSITIONS.has(labelPos) ? `[label-pos = ${labelPos}]` : ''
+    const { labelPos, columns } = node.options || {}
+    const options = []
+    if (LABEL_POSITIONS.has(labelPos)) options.push(`label-pos = ${labelPos}`)
+    if (isValidColumns(columns)) options.push(`columns = ${columns}`)
+    const optionBlock = options.length ? `[${options.join(', ')}]` : ''
     const items = (node.items || [])
       .map((item) => {
         // 处理新格式（节点数组）和旧格式（字符串）

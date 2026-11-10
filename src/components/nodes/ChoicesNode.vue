@@ -24,8 +24,18 @@ const emit = defineEmits(['update-node'])
 const container = ref(null)
 const measureRoot = ref(null)
 const containerWidth = ref(0)
-const columnCount = ref(1)
 const measuredColumnWidths = ref([])
+const itemCount = computed(() => props.node.items?.length ?? 0)
+const selectedColumns = computed({
+  get: () => props.node.options?.columns ?? 'auto',
+  set: (columns) => {
+    const options = { ...props.node.options }
+    if (columns === 'auto') delete options.columns
+    else options.columns = columns
+    emit('update-node', { ...props.node, options })
+  },
+})
+const fixedColumns = computed(() => typeof selectedColumns.value === 'number' ? selectedColumns.value : null)
 const autoLabelPosition = ref('top-left')
 const usesAutoLabelPosition = computed(() => !props.node.options?.labelPos || props.node.options.labelPos === 'auto')
 const labelPosition = computed(() => {
@@ -64,10 +74,7 @@ function updateContainerWidth() {
 }
 
 async function measureChoices() {
-  if (!measureRoot.value) {
-    columnCount.value = 1
-    return
-  }
+  if (!measureRoot.value) return
 
   if (usesAutoLabelPosition.value) {
     const label = measureRoot.value.querySelector('.choices-node__label')
@@ -92,7 +99,6 @@ async function measureChoices() {
   const grid = container.value?.querySelector('.choices-node')
   const gap = grid ? Number.parseFloat(window.getComputedStyle(grid).columnGap) || 0 : 0
   measuredColumnWidths.value = resolveColumns(widths, containerWidth.value, gap)
-  columnCount.value = measuredColumnWidths.value.length
 }
 
 function scheduleMeasure() {
@@ -109,9 +115,11 @@ function scheduleMeasure() {
   })
 }
 
-const effectiveColumnCount = computed(() => Math.max(1, Math.min(columnCount.value, props.node.items?.length || 1)))
 const choicesStyle = computed(() => {
-  const columns = effectiveColumnCount.value
+  const columns = Math.max(1, Math.min(fixedColumns.value ?? measuredColumnWidths.value.length, itemCount.value))
+  const equalColumns = `repeat(${columns}, minmax(0, 1fr))`
+  if (fixedColumns.value !== null) return { gridTemplateColumns: equalColumns }
+
   const grid = container.value?.querySelector('.choices-node')
   const gap = grid ? Number.parseFloat(window.getComputedStyle(grid).columnGap) || 0 : 0
   const equalWidth = (containerWidth.value - gap * (columns - 1)) / columns
@@ -119,7 +127,7 @@ const choicesStyle = computed(() => {
   const equalColumnsFit = measuredColumnWidths.value.every((width) => width <= equalWidth)
   return {
     gridTemplateColumns: equalColumnsFit || measuredColumnWidths.value.length !== columns
-      ? `repeat(${columns}, minmax(0, 1fr))`
+      ? equalColumns
       : measuredColumnWidths.value.map((width) => `minmax(0, ${Math.max(1, width)}fr)`).join(' '),
   }
 })
@@ -173,6 +181,16 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="container" class="choices-node-wrap" :class="`choices-node-wrap--label-${labelPosition}`">
+    <label v-if="editable && itemCount" class="choices-node__column-editor">
+      选项列数
+      <select v-model="selectedColumns">
+        <option value="auto">自动</option>
+        <option v-for="count in itemCount" :key="count" :value="count">{{ count }} 列</option>
+        <option v-if="fixedColumns > itemCount" :value="fixedColumns">
+          {{ fixedColumns }} 列（当前最多 {{ itemCount }} 列）
+        </option>
+      </select>
+    </label>
     <ol class="choices-node" :style="choicesStyle">
       <li v-for="(item, index) in node.items" :key="`${node.id}_${index}`" class="choices-node__item">
         <span class="choices-node__label">{{ LABELS[index] || `${index + 1}` }}.</span>
@@ -226,6 +244,17 @@ onBeforeUnmount(() => {
 .choices-node-wrap {
   position: relative;
   width: 100%;
+}
+
+.choices-node__column-editor {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875em;
+}
+
+.choices-node__column-editor select {
+  font: inherit;
 }
 
 .choices-node {

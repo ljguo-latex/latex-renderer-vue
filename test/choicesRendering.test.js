@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, h, nextTick } from 'vue'
+import { createApp, h, nextTick, ref, unref } from 'vue'
 import LatexRenderer from '../src/components/LatexRenderer.vue'
 
 let app, root, frames, width, itemWidths, resizeCallbacks, contentHeight
@@ -49,12 +49,45 @@ async function flushFrames() {
 async function mount(source, props = {}) {
   root = document.createElement('div')
   document.body.appendChild(root)
-  app = createApp({ render: () => h(LatexRenderer, { modelValue: source, ...props }) })
+  app = createApp({ render: () => h(LatexRenderer, { modelValue: unref(source), ...props }) })
   app.mount(root)
   await flushFrames()
 }
 const textChoices = String.raw`\begin{choices}\item A\item B\item C\item D\end{choices}`
 const columns = () => (root.querySelector('ol').style.gridTemplateColumns.match(/minmax/g) || []).length
+
+describe('fixed choices columns', () => {
+  it.each([[3, 3], [6, 4]])('renders columns = %i as %i tracks in a narrow container', async (requested, rendered) => {
+    width = 400
+    await mount(textChoices.replace('\\begin{choices}', `\\begin{choices}[columns=${requested}]`))
+    expect(root.querySelector('ol').style.gridTemplateColumns).toBe(`repeat(${rendered}, minmax(0, 1fr))`)
+    expect(root.querySelector('select')).toBeNull()
+  })
+
+  it('writes a nested column change back to LaTeX and can restore automatic layout', async () => {
+    const choices = textChoices.replace('\\begin{choices}', '\\begin{choices}[label-pos=left, columns=1]')
+    const source = ref(`\\begin{enumerate}\\item ${choices}\\end{enumerate}`)
+    await mount(source, {
+      editableImages: true,
+      'onUpdate:modelValue': (value) => { source.value = value },
+    })
+    const select = root.querySelector('select')
+    expect(select.value).toBe('1')
+
+    select.value = '3'
+    select.dispatchEvent(new Event('change'))
+    await flushFrames()
+    expect(source.value).toContain('\\begin{choices}[label-pos = left, columns = 3]')
+    expect(root.querySelector('.choices-node').style.gridTemplateColumns).toBe('repeat(3, minmax(0, 1fr))')
+
+    const updatedSelect = root.querySelector('select')
+    updatedSelect.value = 'auto'
+    updatedSelect.dispatchEvent(new Event('change'))
+    await flushFrames()
+    expect(source.value).toContain('\\begin{choices}[label-pos = left]')
+    expect(root.querySelector('.choices-node').style.gridTemplateColumns.match(/minmax/g)).toHaveLength(4)
+  })
+})
 
 describe('automatic choices layout', () => {
   it.each(['top-left', 'left', 'bottom'])('applies explicit label-pos = %s to visible and measured choices', async (position) => {
@@ -93,10 +126,10 @@ describe('automatic choices layout', () => {
     expect(root.querySelector('.choices-node-wrap--label-top-left')).not.toBeNull()
   })
 
-  it('retains label-pos when the image slider updates LaTeX', async () => {
+  it('retains label-pos and columns when the image slider updates LaTeX', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     const update = vi.fn()
-    await mount(String.raw`\begin{choices}[label-pos=bottom]\item \includegraphics[width=.17\textwidth]{a}\end{choices}`, {
+    await mount(String.raw`\begin{choices}[label-pos=bottom, columns=2]\item \includegraphics[width=.17\textwidth]{a}\end{choices}`, {
       editableImages: true, 'onUpdate:modelValue': update,
     })
     const slider = root.querySelector('ol input[type=range]')
@@ -106,7 +139,7 @@ describe('automatic choices layout', () => {
     slider.dispatchEvent(new Event('change'))
     await vi.advanceTimersByTimeAsync(140)
     expect(update).toHaveBeenCalledTimes(1)
-    expect(update.mock.calls[0][0]).toContain('\\begin{choices}[label-pos = bottom]')
+    expect(update.mock.calls[0][0]).toContain('\\begin{choices}[label-pos = bottom, columns = 2]')
     expect(update.mock.calls[0][0]).toContain(String.raw`width=0.25\linewidth`)
   })
 

@@ -62,6 +62,20 @@ describe('choicesProcessor', () => {
     expect(nodes[0].options.labelPos).toBe('bottom')
   })
 
+  it.each(['2', 'auto'])('round-trips columns = %s alongside label-pos', (value) => {
+    const latex = `\\begin{choices}[columns = { ${value} }, label-pos = left]\\item A\\end{choices}`
+    const nodes = parseLatex(latex, defaultProcessors)
+    expect(nodes[0].options).toEqual({ labelPos: 'left', columns: value === 'auto' ? value : Number(value) })
+    expect(serializeLatex(nodes, defaultProcessors)).toContain(`[label-pos = left, columns = ${value}]`)
+  })
+
+  it.each(['0', '-1', '2.5', '2e1', '9007199254740992'])('ignores invalid columns = %s', (value) => {
+    const latex = `\\begin{choices}[columns = ${value}, label-pos = bottom]\\item A\\end{choices}`
+    const nodes = parseLatex(latex, defaultProcessors)
+    expect(nodes[0].options).toEqual({ labelPos: 'bottom' })
+    expect(serializeLatex(nodes, defaultProcessors)).toContain('\\begin{choices}[label-pos = bottom]')
+  })
+
   it('falls back to the existing layout for missing or invalid label-pos', () => {
     for (const options of ['', '[label-pos = invalid]']) {
       const nodes = parseLatex(`\\begin{choices}${options}\\item A\\end{choices}`, defaultProcessors)
