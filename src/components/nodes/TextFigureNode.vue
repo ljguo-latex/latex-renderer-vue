@@ -308,8 +308,8 @@ function placeBar() {
   flex: 0 0 auto;
 }
 
-.text-figure--editable:hover,
-.text-figure--editable:focus-within,
+.text-figure--editable:hover:not(:has(.choices-node-wrap--editable:hover)),
+.text-figure--editable:focus-within:not(:has(.choices-node__column-editor:focus-within)),
 .text-figure--dragging {
   outline: 1px dashed color-mix(in srgb, currentColor 28%, transparent);
   outline-offset: 4px;
@@ -394,8 +394,8 @@ function placeBar() {
   transition-delay: 0s;
 }
 
-/* 图片工具栏展开时让位，避免两条工具栏叠在一起 */
-.text-figure:has(.resizable-image--open) .text-figure__bar {
+/* 图片工具栏或选项列数工具栏激活时让位，避免两条工具栏叠在一起 */
+.text-figure:not(.text-figure--dragging):has(.resizable-image--open, .choices-node-wrap--editable:hover, .choices-node__column-editor:focus-within) .text-figure__bar {
   opacity: 0;
   visibility: hidden;
   transition-delay: 0s;

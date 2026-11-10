@@ -26,17 +26,15 @@ const measureRoot = ref(null)
 const containerWidth = ref(0)
 const measuredColumnWidths = ref([])
 const itemCount = computed(() => props.node.items?.length ?? 0)
-const selectedColumns = computed({
-  get: () => props.node.options?.columns ?? 'auto',
-  set: (columns) => {
-    const options = { ...props.node.options }
-    if (columns === 'auto') delete options.columns
-    else options.columns = columns
-    emit('update-node', { ...props.node, options })
-  },
-})
+const selectedColumns = computed(() => props.node.options?.columns ?? 'auto')
 const fixedColumns = computed(() => typeof selectedColumns.value === 'number' ? selectedColumns.value : null)
+const autoColumns = computed(() => Math.max(1, Math.min(measuredColumnWidths.value.length || 1, itemCount.value || 1)))
+const effectiveColumns = computed(() => Math.max(1, Math.min(fixedColumns.value ?? autoColumns.value, itemCount.value || 1)))
+const columnButtons = computed(() => ['auto', ...Array.from({ length: itemCount.value }, (_, index) => index + 1)])
+const activeColumnButton = computed(() => fixedColumns.value === null ? 'auto' : effectiveColumns.value)
 const autoLabelPosition = ref('top-left')
+const barBelow = ref(false)
+const BAR_SPACE_PX = 36
 const usesAutoLabelPosition = computed(() => !props.node.options?.labelPos || props.node.options.labelPos === 'auto')
 const labelPosition = computed(() => {
   const position = props.node.options?.labelPos
@@ -49,6 +47,36 @@ let resizeObserver = null
 let mutationObserver = null
 let measureFrame = null
 
+function setColumns(columns) {
+  if (columns === 'auto' ? props.node.options?.columns === undefined : columns === selectedColumns.value) return
+
+  const options = { ...props.node.options }
+  if (columns === 'auto') delete options.columns
+  else options.columns = columns
+  emit('update-node', { ...props.node, options })
+}
+
+function visibleTop(element) {
+  let top = 0
+  let parent = element.parentElement
+
+  while (parent) {
+    const style = window.getComputedStyle(parent)
+
+    if (/(auto|scroll|hidden|clip)/.test(`${style.overflow} ${style.overflowY}`)) {
+      top = Math.max(top, parent.getBoundingClientRect().top)
+    }
+
+    parent = parent.parentElement
+  }
+
+  return top
+}
+
+function placeBar() {
+  if (!props.editable || !container.value) return
+  barBelow.value = container.value.getBoundingClientRect().top - BAR_SPACE_PX < visibleTop(container.value)
+}
 
 function resolveColumns(widths, width, gap) {
   const itemCount = widths.length
@@ -116,7 +144,7 @@ function scheduleMeasure() {
 }
 
 const choicesStyle = computed(() => {
-  const columns = Math.max(1, Math.min(fixedColumns.value ?? measuredColumnWidths.value.length, itemCount.value))
+  const columns = effectiveColumns.value
   const equalColumns = `repeat(${columns}, minmax(0, 1fr))`
   if (fixedColumns.value !== null) return { gridTemplateColumns: equalColumns }
 
@@ -180,17 +208,36 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="container" class="choices-node-wrap" :class="`choices-node-wrap--label-${labelPosition}`">
-    <label v-if="editable && itemCount" class="choices-node__column-editor">
-      选项列数
-      <select v-model="selectedColumns">
-        <option value="auto">自动</option>
-        <option v-for="count in itemCount" :key="count" :value="count">{{ count }} 列</option>
-        <option v-if="fixedColumns > itemCount" :value="fixedColumns">
-          {{ fixedColumns }} 列（当前最多 {{ itemCount }} 列）
-        </option>
-      </select>
-    </label>
+  <div
+    ref="container"
+    class="choices-node-wrap"
+    :class="[
+      `choices-node-wrap--label-${labelPosition}`,
+      {
+        'choices-node-wrap--editable': editable && itemCount,
+        'choices-node-wrap--bar-below': barBelow,
+      },
+    ]"
+    @pointerenter="placeBar"
+    @focusin="placeBar"
+  >
+    <div v-if="editable && itemCount" class="choices-node__column-editor" role="group" aria-label="选项列数">
+      <span class="choices-node__column-caption" aria-hidden="true">列数</span>
+      <div class="choices-node__column-buttons">
+        <button
+          v-for="columns in columnButtons"
+          :key="columns"
+          type="button"
+          :class="{ 'choices-node__column-button--inferred': fixedColumns === null && columns === autoColumns }"
+          :aria-label="columns === 'auto' ? '自动排版' : `${columns} 列`"
+          :title="columns === 'auto' ? `自动排版（当前 ${autoColumns} 列）` : `${columns} 列`"
+          :aria-pressed="columns === activeColumnButton"
+          @click.stop="setColumns(columns)"
+        >
+          {{ columns === 'auto' ? '自动' : columns }}
+        </button>
+      </div>
+    </div>
     <ol class="choices-node" :style="choicesStyle">
       <li v-for="(item, index) in node.items" :key="`${node.id}_${index}`" class="choices-node__item">
         <span class="choices-node__label">{{ LABELS[index] || `${index + 1}` }}.</span>
@@ -244,17 +291,139 @@ onBeforeUnmount(() => {
 .choices-node-wrap {
   position: relative;
   width: 100%;
+  border-radius: 6px;
+}
+
+.choices-node-wrap--editable:hover:not(:has(.choices-node-wrap:hover, .resizable-image--open)),
+.choices-node-wrap--editable:has(> .choices-node__column-editor :focus-visible) {
+  outline: 1px dashed color-mix(in srgb, currentColor 28%, transparent);
+  outline-offset: 4px;
 }
 
 .choices-node__column-editor {
-  display: inline-flex;
+  position: absolute;
+  z-index: 4;
+  inset-inline-end: 0;
+  bottom: calc(100% + 6px);
+  display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.875em;
+  gap: 4px;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 3px;
+  border: 1px solid rgba(18, 33, 48, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  color: rgba(18, 33, 48, 0.85);
+  font: 500 12px/1 system-ui, sans-serif;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  /* 移出后延迟隐藏，给鼠标从选项组移到工具条留出时间 */
+  transition: opacity 0.15s ease 0.25s, visibility 0s linear 0.4s;
 }
 
-.choices-node__column-editor select {
+/* 透明桥接工具条与选项组之间的空隙，鼠标经过时不丢失悬停 */
+.choices-node__column-editor::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  height: 8px;
+}
+
+.choices-node-wrap--bar-below > .choices-node__column-editor {
+  top: calc(100% + 6px);
+  bottom: auto;
+}
+
+.choices-node-wrap--bar-below > .choices-node__column-editor::after {
+  top: auto;
+  bottom: 100%;
+}
+
+.choices-node-wrap--editable:hover:not(:has(.choices-node-wrap:hover, .resizable-image--open)) > .choices-node__column-editor,
+.choices-node__column-editor:has(:focus-visible) {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+.choices-node__column-caption {
+  padding: 4px 4px 4px 6px;
+  color: rgba(18, 33, 48, 0.55);
+  white-space: nowrap;
+}
+
+.choices-node__column-buttons {
+  display: flex;
+  gap: 1px;
+  min-width: 0;
+  padding: 2px;
+  border: 1px solid rgba(18, 33, 48, 0.04);
+  border-radius: 6px;
+  background: rgba(18, 33, 48, 0.05);
+  overflow-x: auto;
+}
+
+.choices-node__column-buttons button {
+  position: relative;
+  flex: none;
+  min-width: 26px;
+  min-height: 24px;
+  padding: 2px 7px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: rgba(18, 33, 48, 0.72);
   font: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.choices-node__column-buttons button:hover {
+  background: rgba(18, 33, 48, 0.05);
+  color: rgba(18, 33, 48, 0.95);
+}
+
+.choices-node__column-buttons button[aria-pressed='true'] {
+  background: #ffffff;
+  color: rgba(18, 33, 48, 0.95);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.choices-node__column-button--inferred::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(18, 33, 48, 0.35);
+  transform: translateX(-50%);
+}
+
+.choices-node__column-buttons button:focus-visible {
+  outline: 2px solid color-mix(in srgb, currentColor 55%, transparent);
+  outline-offset: -1px;
+}
+
+@media (hover: none) {
+  .choices-node-wrap--editable:not(:has(.resizable-image--open)) > .choices-node__column-editor {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
 }
 
 .choices-node {

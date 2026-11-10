@@ -61,7 +61,7 @@ describe('fixed choices columns', () => {
     width = 400
     await mount(textChoices.replace('\\begin{choices}', `\\begin{choices}[columns=${requested}]`))
     expect(root.querySelector('ol').style.gridTemplateColumns).toBe(`repeat(${rendered}, minmax(0, 1fr))`)
-    expect(root.querySelector('select')).toBeNull()
+    expect(root.querySelector('[aria-label="选项列数"]')).toBeNull()
   })
 
   it('writes a nested column change back to LaTeX and can restore automatic layout', async () => {
@@ -71,21 +71,49 @@ describe('fixed choices columns', () => {
       editableImages: true,
       'onUpdate:modelValue': (value) => { source.value = value },
     })
-    const select = root.querySelector('select')
-    expect(select.value).toBe('1')
+    const button = (label) => root.querySelector(`[aria-label="选项列数"] button[aria-label="${label}"]`)
+    expect(button('1 列').getAttribute('aria-pressed')).toBe('true')
 
-    select.value = '3'
-    select.dispatchEvent(new Event('change'))
+    button('3 列').click()
     await flushFrames()
     expect(source.value).toContain('\\begin{choices}[label-pos = left, columns = 3]')
     expect(root.querySelector('.choices-node').style.gridTemplateColumns).toBe('repeat(3, minmax(0, 1fr))')
+    expect(button('3 列').getAttribute('aria-pressed')).toBe('true')
 
-    const updatedSelect = root.querySelector('select')
-    updatedSelect.value = 'auto'
-    updatedSelect.dispatchEvent(new Event('change'))
+    button('自动排版').click()
     await flushFrames()
     expect(source.value).toContain('\\begin{choices}[label-pos = left]')
     expect(root.querySelector('.choices-node').style.gridTemplateColumns.match(/minmax/g)).toHaveLength(4)
+    expect(button('自动排版').getAttribute('aria-pressed')).toBe('true')
+    expect(button('自动排版').getAttribute('title')).toBe('自动排版（当前 4 列）')
+    expect(button('4 列').classList.contains('choices-node__column-button--inferred')).toBe(true)
+  })
+
+  it('removes an explicit columns = auto option when clicking the automatic button', async () => {
+    const source = ref(textChoices.replace('\\begin{choices}', '\\begin{choices}[columns=auto]'))
+    await mount(source, {
+      editableImages: true,
+      'onUpdate:modelValue': (value) => { source.value = value },
+    })
+    root.querySelector('[aria-label="选项列数"] button[aria-label="自动排版"]').click()
+    await flushFrames()
+    expect(source.value).toContain('\\begin{choices}\n')
+    expect(source.value).not.toContain('columns')
+  })
+
+  it('flips the column toolbar below when the choices group is near the top edge', async () => {
+    await mount(textChoices, { editableImages: true })
+    const wrap = root.querySelector('.choices-node-wrap')
+    vi.spyOn(wrap, 'getBoundingClientRect').mockReturnValue({ top: 10, width, height: 30 })
+
+    wrap.dispatchEvent(new Event('focusin'))
+    await nextTick()
+    expect(wrap.classList.contains('choices-node-wrap--bar-below')).toBe(true)
+
+    wrap.getBoundingClientRect.mockReturnValue({ top: 80, width, height: 30 })
+    wrap.dispatchEvent(new Event('focusin'))
+    await nextTick()
+    expect(wrap.classList.contains('choices-node-wrap--bar-below')).toBe(false)
   })
 })
 
