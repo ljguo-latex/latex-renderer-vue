@@ -76,13 +76,12 @@ watch(
   font-weight: inherit !important;
 }
 
-/* 优化行内数学公式在中文段落中的基线对齐 */
+/* 行内公式与正文共用基线，MathJax 已按自身度量把公式基线放在文字基线上。
+   不要用 vertical-align: middle：line-height 为 0 的行内容器会按所继承字体的
+   ascent/descent 和公式缩放比例定位，换字体或缩放后公式会整体下沉。 */
 .mathjax-block :deep(mjx-container[jax="CHTML"]:not([display="true"])) {
-  position: relative;
-  /* 针对中文字符高度，微调行内公式相对基线上移，防止公式看起来偏下沉 */
-  top: -0.05em;
+  vertical-align: baseline;
   /* 适当限制行内公式带来的行高撑开 */
-  vertical-align: middle;
   line-height: 0;
   /* 增加左右微小间距，使公式与中文字符之间有呼吸感 */
   margin: 0 0.1em;
