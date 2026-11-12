@@ -271,6 +271,12 @@ export type ImageEditor = (context: ImageEditorContext) => void | Promise<void>
 /** Opens a host-owned asynchronous enhancement tool. The host owns preview and persistence. */
 export type ImageEnhancer = (context: ImageEditorContext) => void | Promise<void>
 
+/**
+ * Opens a host-owned image layout tool (text-figure, multi-image arrangement).
+ * When provided, the renderer stops editing \textfigure groups in the preview.
+ */
+export type ImageLayoutEditor = (context: ImageEditorContext) => void | Promise<void>
+
 export interface LatexRendererProps {
   modelValue?: string
   editableImages?: boolean
@@ -281,6 +287,7 @@ export interface LatexRendererProps {
   imageReplacer?: ImageReplacer
   imageEditor?: ImageEditor
   imageEnhancer?: ImageEnhancer
+  imageLayoutEditor?: ImageLayoutEditor
 }
 
 export interface LatexRendererEmits {

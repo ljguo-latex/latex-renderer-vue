@@ -2,7 +2,7 @@
 import { computed, inject, ref, watch } from 'vue'
 
 import TextFigureRegion from './TextFigureRegion.vue'
-import { LAYOUT_EDITOR_KEY } from '../../latex/imageContext.js'
+import { IMAGE_LAYOUT_EDITOR_KEY, LAYOUT_EDITOR_KEY } from '../../latex/imageContext.js'
 import {
   clampTextFigureRatio,
   getTextFigureLayout,
@@ -31,6 +31,9 @@ const props = defineProps({
 
 const emit = defineEmits(['update-node'])
 const layoutEditor = inject(LAYOUT_EDITOR_KEY, null)
+const hostLayoutEditor = inject(IMAGE_LAYOUT_EDITOR_KEY, computed(() => null))
+// 宿主接管版式时只读：不显示悬停条，也不能拖动调整文字栏
+const layoutEditable = computed(() => props.editable && !hostLayoutEditor.value)
 
 const BAR_SPACE_PX = 36
 
@@ -51,13 +54,13 @@ const rootClass = computed(() => [
   isSide.value ? `text-figure--v-${layout.value.vertical}` : `text-figure--h-${layout.value.horizontal}`,
   `text-figure--align-${figureAlign.value}`,
   {
-    'text-figure--editable': props.editable,
+    'text-figure--editable': layoutEditable.value,
     'text-figure--dragging': dragRatio.value !== null,
     'text-figure--bar-below': barBelow.value,
   },
 ])
 const adjustActions = computed(() => {
-  if (!props.editable || !layoutEditor) return []
+  if (!layoutEditable.value || !layoutEditor) return []
   return ADJUST_ACTIONS.filter(({ action }) => layoutEditor.canAdjust(props.node.id, action))
 })
 
@@ -112,7 +115,7 @@ function commitRatio(nextRatio) {
 }
 
 function startDrag(event) {
-  if (!props.editable || !isSide.value) return
+  if (!layoutEditable.value || !isSide.value) return
   event.preventDefault()
   event.currentTarget.setPointerCapture?.(event.pointerId)
   dragging = true
@@ -132,7 +135,7 @@ function endDrag() {
 
 function handleGapKeydown(event) {
   const direction = { ArrowLeft: -1, ArrowRight: 1 }[event.key]
-  if (!direction || !props.editable || !isSide.value) return
+  if (!direction || !layoutEditable.value || !isSide.value) return
   event.preventDefault()
   const sign = layout.value.side === 'left' ? -direction : direction
   commitRatio(snapRatio(ratio.value + sign * RATIO_KEYBOARD_STEP))
@@ -157,7 +160,7 @@ function visibleTop(element) {
 
 // 上方空间不足（如位于滚动预览区顶部）时把工具条放到图文组下方
 function placeBar() {
-  if (!props.editable || !root.value) return
+  if (!layoutEditable.value || !root.value) return
   barBelow.value = root.value.getBoundingClientRect().top - BAR_SPACE_PX < visibleTop(root.value)
 }
 </script>
@@ -171,7 +174,7 @@ function placeBar() {
     @pointerenter="placeBar"
     @focusin="placeBar"
   >
-    <div v-if="editable" class="text-figure__bar" role="toolbar" aria-label="图文排版">
+    <div v-if="layoutEditable" class="text-figure__bar" role="toolbar" aria-label="图文排版">
       <span class="text-figure__badge">图文 · 文字 {{ ratioLabel }}</span>
       <button
         v-for="item in adjustActions"
@@ -192,19 +195,19 @@ function placeBar() {
       </div>
       <div
         class="text-figure__gap"
-        :role="editable && isSide ? 'separator' : undefined"
-        :tabindex="editable && isSide ? 0 : undefined"
-        :aria-orientation="editable && isSide ? 'vertical' : undefined"
-        :aria-label="editable && isSide ? '拖动调整文字栏宽度' : undefined"
-        :aria-valuenow="editable && isSide ? Math.round(ratio * 100) : undefined"
-        :title="editable && isSide ? `文字栏 ${ratioLabel}，拖动调整` : undefined"
+        :role="layoutEditable && isSide ? 'separator' : undefined"
+        :tabindex="layoutEditable && isSide ? 0 : undefined"
+        :aria-orientation="layoutEditable && isSide ? 'vertical' : undefined"
+        :aria-label="layoutEditable && isSide ? '拖动调整文字栏宽度' : undefined"
+        :aria-valuenow="layoutEditable && isSide ? Math.round(ratio * 100) : undefined"
+        :title="layoutEditable && isSide ? `文字栏 ${ratioLabel}，拖动调整` : undefined"
         @pointerdown="startDrag"
         @pointermove="moveDrag"
         @pointerup="endDrag"
         @pointercancel="endDrag"
         @keydown="handleGapKeydown"
       >
-        <span v-if="editable && isSide" class="text-figure__handle" aria-hidden="true" />
+        <span v-if="layoutEditable && isSide" class="text-figure__handle" aria-hidden="true" />
       </div>
       <div class="text-figure__figure">
         <TextFigureRegion

@@ -2,7 +2,7 @@
 import { computed, provide } from 'vue'
 
 import { parseLatex, replaceNodeDeep, serializeLatex } from '../latex/core'
-import { IDENTITY_IMAGE_SRC_RESOLVER, IMAGE_SRC_RESOLVER_KEY, IMAGE_REPLACER_KEY, IMAGE_EDITOR_KEY, IMAGE_ENHANCER_KEY, LAYOUT_EDITOR_KEY } from '../latex/imageContext'
+import { IDENTITY_IMAGE_SRC_RESOLVER, IMAGE_SRC_RESOLVER_KEY, IMAGE_REPLACER_KEY, IMAGE_EDITOR_KEY, IMAGE_ENHANCER_KEY, IMAGE_LAYOUT_EDITOR_KEY, LAYOUT_EDITOR_KEY } from '../latex/imageContext'
 import { inlineCommandHandlers as defaultInlineCommandHandlers } from '../latex/inline/commands'
 import { INLINE_COMMAND_HANDLERS_KEY } from '../latex/inline/context'
 import { resolveDocumentContexts } from '../latex/inline/documentContext.js'
@@ -34,6 +34,7 @@ const props = defineProps({
   },
   imageEditor: { type: Function, default: null },
   imageEnhancer: { type: Function, default: null },
+  imageLayoutEditor: { type: Function, default: null },
   imageReplacer: {
     type: Function,
     default: null,
@@ -55,6 +56,7 @@ provide(IMAGE_SRC_RESOLVER_KEY, computed(() => props.imageSrcResolver))
 provide(IMAGE_REPLACER_KEY, computed(() => props.imageReplacer))
 provide(IMAGE_EDITOR_KEY, computed(() => props.imageEditor))
 provide(IMAGE_ENHANCER_KEY, computed(() => props.imageEnhancer))
+provide(IMAGE_LAYOUT_EDITOR_KEY, computed(() => props.imageLayoutEditor))
 provide('latex-processors', activeProcessors)
 
 function emitNodes(nextNodes) {
@@ -73,7 +75,8 @@ function handleNodeUpdate(nextNode) {
 const supportsTextFigure = computed(() => activeProcessors.value.some((processor) => processor.type === 'textfigure'))
 
 function previewLayoutEdit(targetId, edit) {
-  if (!props.editableImages || !supportsTextFigure.value) return null
+  // 宿主接管版式时，预览内不再包裹、拆分或调整图文组
+  if (!props.editableImages || !supportsTextFigure.value || props.imageLayoutEditor) return null
   return applyTextFigureEdit(nodes.value, targetId, edit, activeProcessors.value)
 }
 

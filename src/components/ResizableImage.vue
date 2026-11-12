@@ -63,16 +63,21 @@ const props = defineProps({
   layoutMode: { type: String, default: null },
   layoutSide: { type: String, default: 'block' },
   layoutVertical: { type: String, default: null },
+  // 宿主接管版式：只显示一个「图片布局」入口，图文组内的图片宽度也交给宿主调整
+  layoutHost: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['commit-width', 'commit-alignment', 'commit-layout', 'commit-vertical', 'replace-image', 'edit-image', 'enhance-image'])
+const emit = defineEmits(['commit-width', 'commit-alignment', 'commit-layout', 'commit-vertical', 'replace-image', 'edit-image', 'enhance-image', 'open-layout'])
 const showAlignment = computed(() => props.layoutMode !== 'inside')
 // 独立图片本来就独占一行，只提供「图在右 / 图在左」；图文组内的图片才需要「独占一行」来拆开
 const layoutButtons = computed(() => {
+  if (props.layoutHost) return []
   if (props.layoutMode === 'block') return LAYOUT_OPTIONS.filter((option) => option.value !== 'block')
   return props.layoutMode === 'inside' ? LAYOUT_OPTIONS : []
 })
-const showVertical = computed(() => props.layoutMode === 'inside' && ['left', 'right'].includes(props.layoutSide))
+const showVertical = computed(() => !props.layoutHost && props.layoutMode === 'inside' && ['left', 'right'].includes(props.layoutSide))
+// 图栏里的图片固定占满图栏，大小由宿主的布局弹窗统一调整
+const showSlider = computed(() => !(props.layoutHost && props.layoutMode === 'inside'))
 const replacementInput = ref(null)
 
 function selectReplacement(event) {
@@ -621,7 +626,7 @@ onBeforeUnmount(() => {
 
       <input v-if="replaceable" ref="replacementInput" type="file" accept="image/png,image/jpeg" hidden @change="selectReplacement" />
 
-      <div v-if="(replaceable || processable || enhanceable) && (showAlignment || layoutMode)" class="resizable-image__divider" />
+      <div v-if="(replaceable || processable || enhanceable) && (showAlignment || layoutMode || layoutHost)" class="resizable-image__divider" />
 
       <div v-if="showAlignment || layoutButtons.length" class="resizable-image__alignment" role="group" aria-label="对齐与版式">
         <button
@@ -699,6 +704,22 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
+      <button
+        v-if="layoutHost"
+        type="button"
+        class="resizable-image__layout-button"
+        title="调整题目中图片的布局：图在下方、图文并排、多图排列与大小"
+        @click="emit('open-layout')"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="11" y2="6"></line>
+          <line x1="3" y1="12" x2="11" y2="12"></line>
+          <line x1="3" y1="18" x2="11" y2="18"></line>
+          <rect x="14" y="5" width="7" height="14" rx="1.5"></rect>
+        </svg>
+        <span>图片布局</span>
+      </button>
+
       <div v-if="showVertical" class="resizable-image__alignment" role="group" aria-label="图片垂直对齐">
         <button
           v-for="option in VERTICAL_OPTIONS"
@@ -722,9 +743,9 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
-      <div class="resizable-image__divider" />
+      <div v-if="showSlider" class="resizable-image__divider" />
 
-      <label class="resizable-image__slider">
+      <label v-if="showSlider" class="resizable-image__slider">
         <span class="resizable-image__slider-value">{{ widthLabel }}</span>
         <input
           class="resizable-image__slider-input"
@@ -1062,6 +1083,27 @@ onBeforeUnmount(() => {
   border: 1px solid rgba(18, 33, 48, 0.04);
   gap: 1px;
   flex-shrink: 0;
+}
+
+.resizable-image__layout-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  height: 1.85rem;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(18, 33, 48, 0.08);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.04);
+  color: inherit;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.resizable-image__layout-button:hover {
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .resizable-image__slider {

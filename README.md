@@ -500,3 +500,9 @@ Pass `imageEnhancer({ src, node, url })` with `editableImages` to show the optio
 “图片清晰化” action. The host creates the asynchronous task, polls for its result
 and decides when to apply the enhanced image. The renderer does not change the
 LaTeX filename, width or alignment. Omit this prop to hide the action.
+
+Pass `imageLayoutEditor({ src, node, url })` with `editableImages` to let the host
+own image layout. The toolbar then shows a single “图片布局” action instead of the
+side-by-side and vertical alignment buttons, `\textfigure` groups become read-only
+in the preview (no paragraph adjust bar, no column dragging), and images inside a
+figure column hide the width slider. Omit this prop to keep the built-in layout editing.
